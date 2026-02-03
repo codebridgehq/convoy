@@ -1,0 +1,65 @@
+# Version control
+.git
+.gitattributes
+.gitignore
+.github/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.env
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Infrastructure as code
+terraform/
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+*.tfplan
+
+# Test files
+tests/
+pytest.ini
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Build artifacts
+dist/
+build/
+*.log
+
+# Docker related
+.dockerignore
+Dockerfile*
+docker-compose*
+
+# Misc
+.DS_Store

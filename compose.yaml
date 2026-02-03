@@ -1,5 +1,17 @@
-version: "3.5"
 services:
+  core:
+    container_name: api
+    image: convoy/api
+    pull_policy: never
+    build:
+      context: ./api
+      target: app_dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./api:/srv/www
+    restart: unless-stopped
+
   postgresql:
     container_name: temporal-postgresql
     environment:
