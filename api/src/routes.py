@@ -13,14 +13,15 @@ class CargoLoadResponse(BaseModel):
     message: str = Field(..., description="Detailed message about the operation result")
 
 
-router = APIRouter()
+router = APIRouter(tags=["Cargo Operations"])
 
 @router.post(
     "/cargo/load",
     response_model=CargoLoadResponse,
     status_code=status.HTTP_200_OK,
     summary="Load prompt for batch processing",
-    description="Submits a prompt to the batch processing queue. The prompt will be processed asynchronously and results can be retrieved once processing is complete."
+    description="Submits a prompt to the batch processing queue. The prompt will be processed asynchronously and results can be retrieved once processing is complete.",
+
 )
 def load_cargo(request: CargoLoadRequest):
     # Implement your logic here

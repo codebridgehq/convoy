@@ -7,7 +7,7 @@ services:
       context: ./api
       target: app_dev
     ports:
-      - "8080:8080"
+      - "8000:8000"
     volumes:
       - ./api:/srv/www
     restart: unless-stopped

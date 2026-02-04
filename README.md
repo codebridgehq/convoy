@@ -18,4 +18,4 @@ docker compose down
 
 ## API Docs
 
-Once the application is running, visit the API documentation at: http://localhost:8080/docs
+Once the application is running, visit the API documentation at: http://localhost:8000/docs

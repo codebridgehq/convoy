@@ -1,7 +1,7 @@
 # Stage 1: Base
 ARG TARGETPLATFORM=linux/amd64
 
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS base
+FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS base
 
 # Set environment variables for Python (common to both dev and prod)
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -25,16 +25,16 @@ COPY . .
 FROM base AS app_dev
 
 # Expose the application port.
-EXPOSE 8080
+EXPOSE 8000
 
 # Development command using hot-reload.
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 # Stage 3: Production Image
 FROM base AS app_prod
 
 # Expose the application port.
-EXPOSE 8080
+EXPOSE 8000
 
 # Production command (without hot-reload).
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
