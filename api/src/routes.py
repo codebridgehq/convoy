@@ -1,16 +1,5 @@
 from fastapi import APIRouter, status
-from pydantic import BaseModel, Field
-
-class CargoLoadRequest(BaseModel):
-    """Request model for loading a prompt into the batch processing queue."""
-    prompt: str = Field(..., description="The prompt text to be processed")
-    callback_url: str = Field(..., description="URL to receive notification when processing is complete")
-    
-class CargoLoadResponse(BaseModel):
-    """Response model for the cargo load operation."""
-    cargo_id: str = Field(..., description="Unique identifier for the loaded cargo")
-    status: str = Field(..., description="Status of the operation (e.g., 'success', 'error')")
-    message: str = Field(..., description="Detailed message about the operation result")
+from src.models import CargoLoadRequest, CargoLoadResponse
 
 
 router = APIRouter(tags=["Cargo Operations"])
@@ -21,7 +10,6 @@ router = APIRouter(tags=["Cargo Operations"])
     status_code=status.HTTP_200_OK,
     summary="Load prompt for batch processing",
     description="Submits a prompt to the batch processing queue. The prompt will be processed asynchronously and results can be retrieved once processing is complete.",
-
 )
 def load_cargo(request: CargoLoadRequest):
     # Implement your logic here
