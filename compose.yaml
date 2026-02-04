@@ -10,9 +10,40 @@ services:
       - "8000:8000"
     volumes:
       - ./api:/srv/www
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://convoy:convoy@convoy-postgresql:5432/convoy
+      - DATABASE_ECHO=false
+      - BATCH_SIZE_THRESHOLD=100
+      - BATCH_TIME_THRESHOLD_SECONDS=3600
+      - RESULT_RETENTION_DAYS=30
+      - CALLBACK_MAX_RETRIES=5
+    depends_on:
+      convoy-postgresql:
+        condition: service_healthy
+    networks:
+      - temporal-network
     restart: unless-stopped
 
-  postgresql:
+  convoy-postgresql:
+    container_name: convoy-postgresql
+    environment:
+      POSTGRES_PASSWORD: convoy
+      POSTGRES_USER: convoy
+      POSTGRES_DB: convoy
+    image: postgres:${POSTGRESQL_VERSION}
+    networks:
+      - temporal-network
+    ports:
+      - 5433:5432
+    volumes:
+      - convoy-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U convoy -d convoy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  temporal-postgresql:
     container_name: temporal-postgresql
     environment:
       POSTGRES_PASSWORD: temporal
@@ -23,7 +54,7 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - /var/lib/postgresql/data
+      - temporal-postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U temporal"]
       interval: 5s
@@ -32,14 +63,14 @@ services:
   temporal:
     container_name: temporal
     depends_on:
-      postgresql:
+      temporal-postgresql:
         condition: service_healthy
     environment:
       - DB=postgres12
       - DB_PORT=5432
       - POSTGRES_USER=temporal
       - POSTGRES_PWD=temporal
-      - POSTGRES_SEEDS=postgresql
+      - POSTGRES_SEEDS=temporal-postgresql
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
       - TEMPORAL_ADDRESS=temporal:7233
       - TEMPORAL_CLI_ADDRESS=temporal:7233
@@ -50,6 +81,7 @@ services:
       - 7233:7233
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+
   temporal-admin-tools:
     container_name: temporal-admin-tools
     depends_on:
@@ -62,6 +94,7 @@ services:
       - temporal-network
     stdin_open: true
     tty: true
+
   temporal-ui:
     container_name: temporal-ui
     depends_on:
@@ -74,7 +107,12 @@ services:
       - temporal-network
     ports:
       - 8080:8080
+
 networks:
   temporal-network:
     driver: bridge
     name: temporal-network
+
+volumes:
+  convoy-postgres-data:
+  temporal-postgres-data:

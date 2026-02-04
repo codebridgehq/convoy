@@ -3,12 +3,14 @@ name = "convoy-api"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
-    "aioboto3>=13.0.0",
+    "aioboto3>=15.0.0",
+    "alembic>=1.18.3",
     "anthropic>=0.77.1",
-    "boto3>=1.42.41",
+    "asyncpg>=0.31.0",
     "fastapi[standard]>=0.128.0",
     "pydantic>=2.12.5",
     "python-dateutil>=2.9.0.post0",
+    "sqlalchemy[asyncio]>=2.0.46",
 ]

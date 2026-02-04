@@ -1,0 +1,37 @@
+# Database Migrations
+
+This project uses Alembic for database migrations.
+
+## Commands
+
+Run all commands from the `api/` directory.
+
+### Apply migrations
+
+```bash
+uv run alembic upgrade head
+```
+
+### Rollback one migration
+
+```bash
+uv run alembic downgrade -1
+```
+
+### Create a new migration
+
+```bash
+uv run alembic revision --autogenerate -m "description of changes"
+```
+
+### Check current migration version
+
+```bash
+uv run alembic current
+```
+
+### View migration history
+
+```bash
+uv run alembic history
+```
