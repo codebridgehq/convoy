@@ -75,7 +75,7 @@ class BatchJob(Base):
         default=uuid.uuid4,
     )
     provider: Mapped[ProviderType] = mapped_column(
-        Enum(ProviderType, name="provider_type", create_constraint=True),
+        Enum(ProviderType, name="provider_type", create_constraint=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
     )
     provider_job_id: Mapped[str | None] = mapped_column(
@@ -83,7 +83,7 @@ class BatchJob(Base):
         nullable=True,
     )
     status: Mapped[BatchStatus] = mapped_column(
-        Enum(BatchStatus, name="batch_status", create_constraint=True),
+        Enum(BatchStatus, name="batch_status", create_constraint=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=BatchStatus.PENDING,
     )
@@ -149,7 +149,7 @@ class CargoRequest(Base):
         nullable=False,
     )
     provider: Mapped[ProviderType] = mapped_column(
-        Enum(ProviderType, name="provider_type", create_constraint=True),
+        Enum(ProviderType, name="provider_type", create_constraint=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
     )
     model: Mapped[str] = mapped_column(
@@ -165,7 +165,7 @@ class CargoRequest(Base):
         nullable=False,
     )
     status: Mapped[CargoStatus] = mapped_column(
-        Enum(CargoStatus, name="cargo_status", create_constraint=True),
+        Enum(CargoStatus, name="cargo_status", create_constraint=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=CargoStatus.PENDING,
     )
@@ -291,7 +291,7 @@ class CallbackDelivery(Base):
         nullable=False,
     )
     status: Mapped[CallbackStatus] = mapped_column(
-        Enum(CallbackStatus, name="callback_status", create_constraint=True),
+        Enum(CallbackStatus, name="callback_status", create_constraint=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=CallbackStatus.PENDING,
     )
