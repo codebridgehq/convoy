@@ -40,6 +40,24 @@ class CargoStatus(str, enum.Enum):
     CALLBACK_DELIVERED = "callback_delivered"
     CALLBACK_FAILED = "callback_failed"
 
+    @property
+    def description(self) -> str:
+        """Return a human-readable description of the status."""
+        return CARGO_STATUS_DESCRIPTIONS.get(self, "Unknown status")
+
+
+# Human-readable descriptions for cargo statuses
+CARGO_STATUS_DESCRIPTIONS: dict[CargoStatus, str] = {
+    CargoStatus.PENDING: "Cargo is waiting to be assigned to a batch",
+    CargoStatus.BATCHED: "Cargo has been assigned to a batch job",
+    CargoStatus.PROCESSING: "Batch is being processed by the provider",
+    CargoStatus.COMPLETED: "Processing completed successfully",
+    CargoStatus.FAILED: "Processing failed",
+    CargoStatus.CALLBACK_PENDING: "Result ready, callback delivery pending",
+    CargoStatus.CALLBACK_DELIVERED: "Callback successfully delivered",
+    CargoStatus.CALLBACK_FAILED: "Callback delivery failed",
+}
+
 
 class BatchStatus(str, enum.Enum):
     """Status of a batch job."""

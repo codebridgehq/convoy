@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.cargo_loader import CargoLoaderService, DatabasePersistenceError
+from src.cargo_tracker import CargoTrackerService, CargoNotFoundError
 from src.database import get_async_session
-from src.models import CargoLoadRequest, CargoLoadResponse
+from src.models import CargoLoadRequest, CargoLoadResponse, CargoTrackingResponse
 
 
 router = APIRouter(tags=["Cargo Operations"])
@@ -32,13 +33,24 @@ async def load_cargo(
 
 @router.get(
     "/cargo/{cargo_id}/tracking",
+    response_model=CargoTrackingResponse,
     status_code=status.HTTP_200_OK,
     summary="Get cargo tracking",
     description="Returns tracking information for a specific cargo by ID."
 )
-def get_cargo(cargo_id: str):
-    # Implement your logic here
-    return {"status": "success", "message": f"Tracking information for cargo {cargo_id}"}
+async def get_cargo_tracking(
+    cargo_id: str,
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Get tracking information for a cargo."""
+    service = CargoTrackerService(session)
+    try:
+        return await service.get_tracking(cargo_id)
+    except CargoNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e.message),
+        ) from e
 
 @router.get(
     "/health",

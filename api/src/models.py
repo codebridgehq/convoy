@@ -1,5 +1,7 @@
-from pydantic import BaseModel, Field
+from datetime import datetime
 from typing import Optional, Union
+
+from pydantic import BaseModel, Field
 
 class CacheControl(BaseModel):
     """Cache control settings for content blocks."""
@@ -48,3 +50,12 @@ class CargoLoadResponse(BaseModel):
     cargo_id: str = Field(..., description="Unique identifier for the loaded cargo")
     status: str = Field(..., description="Status of the operation (e.g., 'success', 'error')")
     message: str = Field(..., description="Detailed message about the operation result")
+
+
+class CargoTrackingResponse(BaseModel):
+    """Response model for cargo tracking information."""
+    cargo_id: str = Field(..., description="Unique identifier for the cargo")
+    status: str = Field(..., description="Current status of the cargo (e.g., 'pending', 'processing', 'completed')")
+    status_description: str = Field(..., description="Human-readable description of the current status")
+    created_at: datetime = Field(..., description="Timestamp when cargo was created")
+    updated_at: datetime = Field(..., description="Timestamp when cargo was last updated")
