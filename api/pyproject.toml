@@ -10,7 +10,9 @@ dependencies = [
     "anthropic>=0.77.1",
     "asyncpg>=0.31.0",
     "fastapi[standard]>=0.128.0",
+    "httpx>=0.28.0",
     "pydantic>=2.12.5",
     "python-dateutil>=2.9.0.post0",
     "sqlalchemy[asyncio]>=2.0.46",
+    "temporalio>=1.22.0",
 ]

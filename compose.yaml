@@ -17,9 +17,45 @@ services:
       - BATCH_TIME_THRESHOLD_SECONDS=3600
       - RESULT_RETENTION_DAYS=30
       - CALLBACK_MAX_RETRIES=5
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_NAMESPACE=default
+      - TEMPORAL_TASK_QUEUE=convoy-tasks
     depends_on:
       convoy-postgresql:
         condition: service_healthy
+      temporal:
+        condition: service_started
+    networks:
+      - temporal-network
+    restart: unless-stopped
+
+  convoy-worker:
+    container_name: convoy-worker
+    image: convoy/api
+    pull_policy: never
+    build:
+      context: ./api
+      target: app_dev
+    command: uv run python -m src.temporal.worker
+    volumes:
+      - ./api:/srv/www
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://convoy:convoy@convoy-postgresql:5432/convoy
+      - DATABASE_ECHO=false
+      - BATCH_SIZE_THRESHOLD=100
+      - BATCH_TIME_THRESHOLD_SECONDS=3600
+      - BATCH_CHECK_INTERVAL_SECONDS=30
+      - RESULT_RETENTION_DAYS=30
+      - CALLBACK_MAX_RETRIES=5
+      - CALLBACK_HTTP_TIMEOUT_SECONDS=30
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_NAMESPACE=default
+      - TEMPORAL_TASK_QUEUE=convoy-tasks
+    depends_on:
+      convoy-postgresql:
+        condition: service_healthy
+      temporal:
+        condition: service_started
     networks:
       - temporal-network
     restart: unless-stopped

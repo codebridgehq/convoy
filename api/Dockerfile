@@ -1,7 +1,7 @@
 # Stage 1: Base
 ARG TARGETPLATFORM=linux/amd64
 
-FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS base
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS base
 
 # Set environment variables for Python (common to both dev and prod)
 ENV PYTHONDONTWRITEBYTECODE=1
