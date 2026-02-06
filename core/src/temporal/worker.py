@@ -28,8 +28,9 @@ from src.temporal.activities.callback_activities import (
     get_cargo_callback_url,
 )
 from src.temporal.client import get_temporal_client
-from src.temporal.config import TemporalConfig
+from src.temporal.config import BatchConfig, TemporalConfig
 from src.temporal.workflows import (
+    BatchSchedulerInput,
     BatchSchedulerWorkflow,
     CallbackDeliveryWorkflow,
     ResultCleanupWorkflow,
@@ -43,6 +44,35 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+async def start_batch_scheduler_workflows(client, config: TemporalConfig) -> None:
+    """Start batch scheduler workflows for each provider.
+    
+    This ensures the long-running scheduler workflows are running.
+    The function is idempotent - if workflows are already running, it logs and continues.
+    """
+    for provider in ["bedrock", "anthropic"]:
+        workflow_id = f"batch-scheduler-{provider}"
+        try:
+            workflow_input = BatchSchedulerInput(
+                provider=provider,
+                check_interval_seconds=BatchConfig.check_interval_seconds,
+            )
+
+            await client.start_workflow(
+                BatchSchedulerWorkflow.run,
+                workflow_input,
+                id=workflow_id,
+                task_queue=config.task_queue,
+            )
+            logger.info(f"Started batch scheduler workflow: {workflow_id}")
+        except Exception as e:
+            # Workflow may already be running (which is fine)
+            if "already started" in str(e).lower() or "already exists" in str(e).lower():
+                logger.info(f"Batch scheduler workflow already running: {workflow_id}")
+            else:
+                logger.warning(f"Could not start batch scheduler workflow {workflow_id}: {e}")
+
+
 async def run_worker() -> None:
     """Run the Temporal worker."""
     config = TemporalConfig()
@@ -51,6 +81,10 @@ async def run_worker() -> None:
 
     # Get Temporal client
     client = await get_temporal_client(config)
+
+    # Start batch scheduler workflows (idempotent - safe to call on every worker start)
+    await start_batch_scheduler_workflows(client, config)
+    logger.info("Batch scheduler workflows initialized")
 
     # Create worker with all workflows and activities
     worker = Worker(
