@@ -157,6 +157,7 @@ services:
   convoy-tests:
     container_name: convoy-tests
     image: convoy/tests
+    pull_policy: never
     profiles:
       - tests
     build:
