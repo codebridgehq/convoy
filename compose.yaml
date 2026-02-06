@@ -1,11 +1,12 @@
 services:
-  core:
-    container_name: core
-    image: convoy/core
+  convoy-api:
+    container_name: convoy-api
+    image: convoy-api
     pull_policy: never
     build:
       context: ./core
-      target: app_dev
+      dockerfile: Dockerfile.api
+      target: api_dev
     ports:
       - "8000:8000"
     volumes:
@@ -31,12 +32,12 @@ services:
 
   convoy-worker:
     container_name: convoy-worker
-    image: convoy/core
+    image: convoy-worker
     pull_policy: never
     build:
       context: ./core
-      target: app_dev
-    command: uv run python -m src.temporal.worker
+      dockerfile: Dockerfile.worker
+      target: worker_dev
     volumes:
       - ./core:/srv/www
       - ${AWS_DIRECTORY_PATH}:/root/.aws  # Mount AWS credentials for Bedrock integration
@@ -103,6 +104,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
   temporal:
     container_name: temporal
     depends_on:

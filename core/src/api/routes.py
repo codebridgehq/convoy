@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.cargo_loader import CargoLoaderService, DatabasePersistenceError
+from src.cargo_loader import CargoLoaderService, CargoLoadInput, DatabasePersistenceError
 from src.cargo_tracker import CargoTrackerService, CargoNotFoundError
 from src.database import get_async_session
-from src.models import CargoLoadRequest, CargoLoadResponse, CargoTrackingResponse
+from src.api.models import CargoLoadRequest, CargoLoadResponse, CargoTrackingResponse
 
 
 router = APIRouter(tags=["Cargo Operations"])
@@ -23,8 +23,23 @@ async def load_cargo(
 ):
     """Load cargo into the database for batch processing."""
     service = CargoLoaderService(session)
+    
+    # Map API DTO to service input
+    service_input = CargoLoadInput(
+        model=request.params.model,
+        params=request.params.model_dump(),
+        callback_url=request.callback_url,
+    )
+    
     try:
-        return await service.load_cargo(request)
+        result = await service.load_cargo(service_input)
+        
+        # Map service result to API response
+        return CargoLoadResponse(
+            cargo_id=result.cargo_id,
+            status="success" if result.success else "error",
+            message=result.message,
+        )
     except DatabasePersistenceError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -45,7 +60,16 @@ async def get_cargo_tracking(
     """Get tracking information for a cargo."""
     service = CargoTrackerService(session)
     try:
-        return await service.get_tracking(cargo_id)
+        tracking_info = await service.get_tracking(cargo_id)
+        
+        # Map service result to API response
+        return CargoTrackingResponse(
+            cargo_id=tracking_info.cargo_id,
+            status=tracking_info.status,
+            status_description=tracking_info.status_description,
+            created_at=tracking_info.created_at,
+            updated_at=tracking_info.updated_at,
+        )
     except CargoNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

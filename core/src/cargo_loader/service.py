@@ -6,9 +6,9 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import CargoRequest, CargoStatus, ProviderType
-from src.models import CargoLoadRequest, CargoLoadResponse
 
 from .exceptions import DatabasePersistenceError
+from .models import CargoLoadInput, CargoLoadResult
 
 logger = logging.getLogger(__name__)
 
@@ -34,14 +34,14 @@ class CargoLoaderService:
         """
         self.session = session
 
-    async def load_cargo(self, request: CargoLoadRequest) -> CargoLoadResponse:
+    async def load_cargo(self, input: CargoLoadInput) -> CargoLoadResult:
         """Load a cargo request into the database.
 
         Args:
-            request: The cargo load request containing params and callback URL.
+            input: The cargo load input containing model, params, and callback URL.
 
         Returns:
-            CargoLoadResponse with the generated cargo_id and status.
+            CargoLoadResult with the generated cargo_id and status.
 
         Raises:
             DatabasePersistenceError: If the cargo cannot be persisted to the database.
@@ -53,9 +53,9 @@ class CargoLoaderService:
             cargo_request = CargoRequest(
                 cargo_id=cargo_id,
                 provider=ProviderType.BEDROCK,
-                model=request.params.model,
-                params=request.params.model_dump(),
-                callback_url=request.callback_url,
+                model=input.model,
+                params=input.params,
+                callback_url=input.callback_url,
                 status=CargoStatus.PENDING,
             )
 
@@ -64,9 +64,9 @@ class CargoLoaderService:
 
             logger.info(f"Cargo {cargo_id} loaded successfully")
 
-            return CargoLoadResponse(
+            return CargoLoadResult(
                 cargo_id=cargo_id,
-                status="success",
+                success=True,
                 message="Cargo loaded successfully",
             )
 

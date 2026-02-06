@@ -6,9 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import CargoRequest
-from src.models import CargoTrackingResponse
 
 from .exceptions import CargoNotFoundError
+from .models import CargoTrackingInfo
 
 logger = logging.getLogger(__name__)
 
@@ -28,14 +28,14 @@ class CargoTrackerService:
         """
         self.session = session
 
-    async def get_tracking(self, cargo_id: str) -> CargoTrackingResponse:
+    async def get_tracking(self, cargo_id: str) -> CargoTrackingInfo:
         """Get tracking information for a cargo.
 
         Args:
             cargo_id: The unique cargo identifier.
 
         Returns:
-            CargoTrackingResponse with status and timestamps.
+            CargoTrackingInfo with status and timestamps.
 
         Raises:
             CargoNotFoundError: If the cargo does not exist.
@@ -52,7 +52,7 @@ class CargoTrackerService:
 
         logger.info(f"Found cargo {cargo_id} with status: {cargo.status.value}")
 
-        return CargoTrackingResponse(
+        return CargoTrackingInfo(
             cargo_id=cargo.cargo_id,
             status=cargo.status.value,
             status_description=cargo.status.description,

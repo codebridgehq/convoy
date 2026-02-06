@@ -14,27 +14,20 @@ WORKDIR /srv/www
 # Copy uv files
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies (including strands-agents)
+# Install dependencies
 RUN uv sync --frozen --no-cache
-
 
 # Copy the rest of the application code.
 COPY . .
 
 # Stage 2: Development Image
-FROM base AS app_dev
+FROM base AS worker_dev
 
-# Expose the application port.
-EXPOSE 8000
-
-# Development command using hot-reload.
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Development command for Temporal worker.
+CMD ["uv", "run", "python", "-m", "src.temporal.worker"]
 
 # Stage 3: Production Image
-FROM base AS app_prod
+FROM base AS worker_prod
 
-# Expose the application port.
-EXPOSE 8000
-
-# Production command (without hot-reload).
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Production command for Temporal worker.
+CMD ["uv", "run", "python", "-m", "src.temporal.worker"]

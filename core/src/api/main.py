@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from src.routes import router
+from src.api.routes import router
 from src.temporal.client import get_temporal_client
 from src.temporal.config import BatchConfig, TemporalConfig
 from src.temporal.workflows import BatchSchedulerInput, BatchSchedulerWorkflow
