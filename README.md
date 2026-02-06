@@ -19,7 +19,7 @@ docker compose down
 ### Run tests
 
 ```bash
-docker compose --profile tests run -t --rm convoy-e2e-tests
+docker compose --profile tests run -t --rm convoy-tests
 ```
 
 ## API Docs
