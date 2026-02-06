@@ -153,6 +153,23 @@ services:
     ports:
       - 8080:8080
 
+  # E2E Test Runner - only runs with --profile tests
+  convoy-tests:
+    container_name: convoy-tests
+    image: convoy/tests
+    profiles:
+      - tests
+    build:
+      context: ./tests
+      dockerfile: Dockerfile
+    environment:
+      - API_BASE_URL=${API_BASE_URL:-http://convoy-api:8000}
+    depends_on:
+      convoy-api:
+        condition: service_started
+    networks:
+      - temporal-network
+
 networks:
   temporal-network:
     driver: bridge

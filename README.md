@@ -16,6 +16,12 @@ docker compose up -d
 docker compose down
 ```
 
+### Run tests
+
+```bash
+docker compose --profile tests run -t --rm convoy-e2e-tests
+```
+
 ## API Docs
 
 Once the application is running, visit the API documentation at: http://localhost:8000/docs
