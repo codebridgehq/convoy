@@ -1,7 +1,7 @@
 services:
   convoy-api:
     container_name: convoy-api
-    image: convoy-api
+    image: convoy/api
     pull_policy: never
     build:
       context: ./core
@@ -32,7 +32,7 @@ services:
 
   convoy-worker:
     container_name: convoy-worker
-    image: convoy-worker
+    image: convoy/worker
     pull_policy: never
     build:
       context: ./core
