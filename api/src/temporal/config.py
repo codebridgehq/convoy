@@ -40,3 +40,13 @@ class CleanupConfig:
     retention_days: int = int(os.getenv("RESULT_RETENTION_DAYS", "30"))
     # Batch size for deletion operations
     deletion_batch_size: int = int(os.getenv("CLEANUP_BATCH_SIZE", "1000"))
+
+
+class BedrockConfig:
+    """AWS Bedrock batch processing configuration."""
+
+    region: str = os.getenv("AWS_REGION", "")
+    s3_bucket: str = os.getenv("BEDROCK_S3_BUCKET", "")
+    role_arn: str = os.getenv("BEDROCK_ROLE_ARN", "")
+    s3_input_prefix: str = os.getenv("BEDROCK_S3_INPUT_PREFIX", "batch-inputs")
+    s3_output_prefix: str = os.getenv("BEDROCK_S3_OUTPUT_PREFIX", "batch-outputs")

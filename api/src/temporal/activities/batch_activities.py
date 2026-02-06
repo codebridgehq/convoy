@@ -21,7 +21,7 @@ from src.database import (
     ProviderType,
     get_async_session,
 )
-from src.temporal.config import BatchConfig
+from src.temporal.config import BatchConfig, BedrockConfig
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,39 @@ def _get_provider_type(provider: str) -> ProviderType:
 def _get_batch_provider(provider: str) -> BatchProvider:
     """Convert string provider to BatchProvider enum."""
     return BatchProvider(provider.lower())
+
+
+def _create_bedrock_adapter() -> BedrockBatchProcessor:
+    """Create a BedrockBatchProcessor with configuration from BedrockConfig.
+
+    Returns:
+        Configured BedrockBatchProcessor instance.
+
+    Raises:
+        ValueError: If required environment variables are not set.
+    """
+    config = BedrockConfig()
+
+    missing_vars = []
+    if not config.region:
+        missing_vars.append("AWS_REGION")
+    if not config.s3_bucket:
+        missing_vars.append("BEDROCK_S3_BUCKET")
+    if not config.role_arn:
+        missing_vars.append("BEDROCK_ROLE_ARN")
+
+    if missing_vars:
+        raise ValueError(
+            f"Missing required environment variables for Bedrock batch processor: {', '.join(missing_vars)}"
+        )
+
+    return BedrockBatchProcessor(
+        region=config.region,
+        s3_bucket=config.s3_bucket,
+        role_arn=config.role_arn,
+        s3_input_prefix=config.s3_input_prefix,
+        s3_output_prefix=config.s3_output_prefix,
+    )
 
 
 @activity.defn
@@ -227,7 +260,7 @@ async def submit_batch_to_provider(batch_job_id: str) -> str:
 
         # Register the appropriate adapter
         if batch_provider == BatchProvider.BEDROCK:
-            adapter = BedrockBatchProcessor()
+            adapter = _create_bedrock_adapter()
             service.register_adapter(BatchProvider.BEDROCK, adapter)
         # TODO: Add Anthropic adapter when implemented
 
@@ -276,7 +309,7 @@ async def poll_batch_status(batch_job_id: str, provider_job_id: str) -> dict:
         service = BatchProcessingService(default_provider=batch_provider)
 
         if batch_provider == BatchProvider.BEDROCK:
-            adapter = BedrockBatchProcessor()
+            adapter = _create_bedrock_adapter()
             service.register_adapter(BatchProvider.BEDROCK, adapter)
 
         provider_status = await service.get_batch_status(provider_job_id, provider=batch_provider)
@@ -342,7 +375,7 @@ async def process_batch_results(batch_job_id: str) -> list[str]:
         service = BatchProcessingService(default_provider=batch_provider)
 
         if batch_provider == BatchProvider.BEDROCK:
-            adapter = BedrockBatchProcessor()
+            adapter = _create_bedrock_adapter()
             service.register_adapter(BatchProvider.BEDROCK, adapter)
 
         batch_results = await service.get_batch_results(
