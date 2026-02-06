@@ -21,7 +21,7 @@ from src.database import (
     ProviderType,
     get_async_session,
 )
-from src.temporal.config import BatchConfig, BedrockConfig
+from src.worker.config import BatchConfig, BedrockConfig
 
 logger = logging.getLogger(__name__)
 

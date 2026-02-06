@@ -1,7 +1,7 @@
 """Temporal worker entry point for Convoy.
 
 This module runs the Temporal worker that executes workflows and activities.
-Run with: python -m src.temporal.worker
+Run with: python -m src.worker.main
 """
 
 import asyncio
@@ -11,7 +11,7 @@ import sys
 
 from temporalio.worker import Worker
 
-from src.temporal.activities import (
+from src.worker.activities import (
     check_pending_requests,
     create_batch_job,
     delete_expired_results,
@@ -23,13 +23,13 @@ from src.temporal.activities import (
     submit_batch_to_provider,
     update_callback_status,
 )
-from src.temporal.activities.callback_activities import (
+from src.worker.activities.callback_activities import (
     get_callback_payload,
     get_cargo_callback_url,
 )
-from src.temporal.client import get_temporal_client
-from src.temporal.config import BatchConfig, TemporalConfig
-from src.temporal.workflows import (
+from src.worker.client import get_temporal_client
+from src.worker.config import BatchConfig, TemporalConfig
+from src.worker.workflows import (
     BatchSchedulerInput,
     BatchSchedulerWorkflow,
     CallbackDeliveryWorkflow,

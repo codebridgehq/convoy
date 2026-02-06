@@ -6,7 +6,7 @@ from temporalio import workflow
 from temporalio.common import RetryPolicy
 
 with workflow.unsafe.imports_passed_through():
-    from src.temporal.activities.cleanup_activities import (
+    from src.worker.activities.cleanup_activities import (
         delete_expired_results,
         find_expired_results,
     )

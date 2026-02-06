@@ -16,7 +16,7 @@ from src.database import (
     CargoStatus,
     get_async_session,
 )
-from src.temporal.config import CallbackConfig
+from src.worker.config import CallbackConfig
 
 logger = logging.getLogger(__name__)
 

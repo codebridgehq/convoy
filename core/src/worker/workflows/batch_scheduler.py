@@ -7,14 +7,14 @@ from temporalio import workflow
 from temporalio.common import RetryPolicy
 
 with workflow.unsafe.imports_passed_through():
-    from src.temporal.activities.batch_activities import (
+    from src.worker.activities.batch_activities import (
         check_pending_requests,
         create_batch_job,
         poll_batch_status,
         process_batch_results,
         submit_batch_to_provider,
     )
-    from src.temporal.config import BatchConfig
+    from src.worker.config import BatchConfig
 
 
 @dataclass

@@ -11,7 +11,7 @@ from src.database import (
     CargoResult,
     get_async_session,
 )
-from src.temporal.config import CleanupConfig
+from src.worker.config import CleanupConfig
 
 logger = logging.getLogger(__name__)
 

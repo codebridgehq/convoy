@@ -24,10 +24,10 @@ COPY . .
 FROM base AS worker_dev
 
 # Development command for Temporal worker.
-CMD ["uv", "run", "python", "-m", "src.temporal.worker"]
+CMD ["uv", "run", "python", "-m", "src.worker.main"]
 
 # Stage 3: Production Image
 FROM base AS worker_prod
 
 # Production command for Temporal worker.
-CMD ["uv", "run", "python", "-m", "src.temporal.worker"]
+CMD ["uv", "run", "python", "-m", "src.worker.main"]

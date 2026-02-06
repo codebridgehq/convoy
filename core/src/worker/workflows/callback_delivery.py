@@ -7,14 +7,14 @@ from temporalio import workflow
 from temporalio.common import RetryPolicy
 
 with workflow.unsafe.imports_passed_through():
-    from src.temporal.activities.callback_activities import (
+    from src.worker.activities.callback_activities import (
         deliver_callback,
         get_callback_payload,
         get_cargo_callback_url,
         mark_callback_failed,
         update_callback_status,
     )
-    from src.temporal.config import CallbackConfig
+    from src.worker.config import CallbackConfig
 
 
 @workflow.defn
