@@ -39,6 +39,7 @@ services:
     command: uv run python -m src.temporal.worker
     volumes:
       - ./api:/srv/www
+      - ${AWS_DIRECTORY_PATH}:/root/.aws  # Mount AWS credentials for Bedrock integration
     environment:
       - DATABASE_URL=postgresql+asyncpg://convoy:convoy@convoy-postgresql:5432/convoy
       - DATABASE_ECHO=false
@@ -51,6 +52,12 @@ services:
       - TEMPORAL_ADDRESS=${TEMPORAL_ADDRESS:-temporal:7233}
       - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE:-default}
       - TEMPORAL_TASK_QUEUE=${TEMPORAL_TASK_QUEUE:-convoy-tasks}
+      - AWS_PROFILE=${AWS_PROFILE}  # Add your SSO profile name
+      - AWS_REGION=${AWS_REGION}  # AWS region for Bedrock
+      - BEDROCK_S3_BUCKET=${BEDROCK_S3_BUCKET}  # S3 bucket for Bedrock batch inputs/outputs
+      - BEDROCK_ROLE_ARN=${BEDROCK_ROLE_ARN}  # IAM role ARN for Bedrock batch processing
+      - BEDROCK_S3_INPUT_PREFIX=${BEDROCK_S3_INPUT_PREFIX}  # S3 prefix for Bedrock batch inputs
+      - BEDROCK_S3_OUTPUT_PREFIX=${BEDROCK_S3_OUTPUT_PREFIX}  # S3 prefix
     depends_on:
       convoy-postgresql:
         condition: service_healthy
