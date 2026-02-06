@@ -22,6 +22,12 @@ docker compose down
 docker compose --profile tests run -t --rm convoy-tests
 ```
 
+### Run specific test file
+
+```bash
+docker compose --profile tests run --rm convoy-tests uv run pytest test_batch_flow.py -v -s
+```
+
 ## API Docs
 
 Once the application is running, visit the API documentation at: http://localhost:8000/docs

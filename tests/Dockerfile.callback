@@ -1,0 +1,27 @@
+# Dockerfile for Mock Callback Server
+# Used during E2E testing to receive callbacks from Convoy
+
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install curl for health checks and Python dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir \
+    fastapi==0.115.0 \
+    uvicorn[standard]==0.30.6 \
+    httpx==0.27.2
+
+# Copy the mock server
+COPY mock_callback_server.py .
+
+# Expose the callback server port
+EXPOSE 8001
+
+# Health check using curl
+HEALTHCHECK --interval=5s --timeout=5s --retries=5 --start-period=10s \
+    CMD curl -f http://localhost:8001/health || exit 1
+
+# Run the server
+CMD ["python", "mock_callback_server.py"]

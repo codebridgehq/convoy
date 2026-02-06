@@ -13,6 +13,7 @@ These tests verify the Convoy API endpoints work correctly by making real HTTP r
 | `test_health.py` | `GET /health` | Health check endpoint tests |
 | `test_cargo_load.py` | `POST /cargo/load` | Cargo load endpoint tests (valid/invalid payloads) |
 | `test_cargo_tracking.py` | `GET /cargo/{cargo_id}/tracking` | Cargo tracking endpoint tests |
+| `test_batch_flow.py` | Full flow | **Batch processing E2E test** - sends 100 requests to verify complete flow |
 
 ## Running Tests
 
@@ -69,6 +70,7 @@ API_BASE_URL=http://localhost:8000 uv run pytest -v --tb=long
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `API_BASE_URL` | `http://localhost:8000` | Base URL of the Convoy API to test |
+| `CALLBACK_SERVER_URL` | `http://mock-callback:8001` | URL of the mock callback server (for batch flow tests) |
 
 ### Pytest Options
 
@@ -82,14 +84,17 @@ The tests use the following pytest configuration (defined in `pyproject.toml`):
 
 ```
 tests/
-├── __init__.py           # Package marker
-├── conftest.py           # Shared fixtures (api_base_url, async_client)
-├── pyproject.toml        # Dependencies and pytest config
-├── Dockerfile            # Docker image for running tests
-├── README.md             # This file
-├── test_health.py        # Health endpoint tests
-├── test_cargo_load.py    # Cargo load endpoint tests
-└── test_cargo_tracking.py # Cargo tracking endpoint tests
+├── __init__.py              # Package marker
+├── conftest.py              # Shared fixtures (api_base_url, async_client)
+├── pyproject.toml           # Dependencies and pytest config
+├── Dockerfile               # Docker image for running tests
+├── Dockerfile.callback      # Docker image for mock callback server
+├── mock_callback_server.py  # FastAPI server for receiving callbacks
+├── README.md                # This file
+├── test_health.py           # Health endpoint tests
+├── test_cargo_load.py       # Cargo load endpoint tests
+├── test_cargo_tracking.py   # Cargo tracking endpoint tests
+└── test_batch_flow.py       # Batch processing E2E tests
 ```
 
 ## Writing New Tests
@@ -158,4 +163,83 @@ Ensure you have the latest dependencies:
 ```bash
 # Rebuild without cache
 docker compose --profile tests build --no-cache convoy-e2e-tests
+```
+
+## Batch Flow Test
+
+The `test_batch_flow.py` file contains a comprehensive E2E test that verifies the complete batch processing pipeline.
+
+### What It Tests
+
+1. **Request Submission**: Sends 100 cargo requests to the API
+2. **Batch Creation**: Verifies the batch scheduler creates a batch when threshold is met
+3. **Batch Processing**: Waits for Bedrock to process the batch
+4. **Callback Delivery**: Verifies all callbacks are delivered to the mock server
+5. **Status Tracking**: Confirms cargo tracking shows correct status progression
+
+### Prerequisites
+
+- AWS credentials configured for Bedrock access
+- `BATCH_SIZE_THRESHOLD` set to 100 (default)
+- All services running (API, Worker, Temporal, PostgreSQL)
+
+### Running the Batch Flow Test
+
+```bash
+# Start all services including mock callback server
+docker compose --profile tests up -d
+
+# Run only the batch flow test
+docker compose --profile tests run --rm convoy-tests \
+  pytest test_batch_flow.py::TestBatchFlow::test_batch_flow_100_requests -v -s
+
+# Run smoke tests first (quick verification)
+docker compose --profile tests run --rm convoy-tests \
+  pytest test_batch_flow.py::TestBatchFlowSmoke -v
+```
+
+### Test Configuration
+
+The test uses these defaults (configurable in `test_batch_flow.py`):
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `BATCH_SIZE` | 100 | Number of requests to send |
+| `MODEL` | `anthropic.claude-3-haiku-20240307-v1:0` | Bedrock model (cheapest Claude) |
+| `MAX_TOKENS` | 50 | Max response tokens (keeps costs low) |
+| `BATCH_TIMEOUT_SECONDS` | 1800 | Max wait for batch processing (30 min) |
+| `CALLBACK_TIMEOUT_SECONDS` | 600 | Max wait for callbacks (10 min) |
+
+### Expected Duration
+
+- **Request Submission**: ~10-30 seconds
+- **Batch Processing**: 5-20 minutes (depends on Bedrock queue)
+- **Callback Delivery**: 1-5 minutes
+- **Total**: ~10-30 minutes
+
+### Cost Estimate
+
+Using Claude 3 Haiku on Bedrock with 100 requests:
+- Input: ~100 tokens × 100 requests = 10,000 tokens (~$0.0025)
+- Output: ~50 tokens × 100 requests = 5,000 tokens (~$0.00125)
+- **Total: ~$0.004 per test run**
+
+### Mock Callback Server
+
+The mock callback server (`mock_callback_server.py`) provides:
+
+- `POST /callback` - Receives callbacks from Convoy
+- `GET /callbacks` - Lists all received callbacks
+- `GET /callbacks/{cargo_id}` - Gets specific callback
+- `DELETE /callbacks` - Clears stored callbacks
+- `GET /health` - Health check
+
+You can inspect callbacks during testing:
+
+```bash
+# Check callback count
+curl http://localhost:8001/callbacks
+
+# Get specific callback
+curl http://localhost:8001/callbacks/cargo_abc123
 ```
