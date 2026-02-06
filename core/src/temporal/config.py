@@ -19,7 +19,6 @@ class BatchConfig:
     """Batch processing configuration."""
 
     size_threshold: int = int(os.getenv("BATCH_SIZE_THRESHOLD", "100"))
-    time_threshold_seconds: int = int(os.getenv("BATCH_TIME_THRESHOLD_SECONDS", "3600"))
     # How often to check for pending requests (seconds)
     check_interval_seconds: int = int(os.getenv("BATCH_CHECK_INTERVAL_SECONDS", "30"))
 

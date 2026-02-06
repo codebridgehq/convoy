@@ -139,11 +139,6 @@ async def check_pending_requests(provider: str) -> dict:
                 f"Batch threshold met for {provider}: {pending_count} >= {config.size_threshold}"
             )
             should_batch = True
-        elif oldest_age_seconds and oldest_age_seconds >= config.time_threshold_seconds and pending_count > 0:
-            logger.info(
-                f"Time threshold met for {provider}: {oldest_age_seconds}s >= {config.time_threshold_seconds}s"
-            )
-            should_batch = True
 
         return {
             "should_batch": should_batch,
