@@ -16,8 +16,7 @@ class Base(DeclarativeBase):
 def get_database_url() -> str:
     """Get the database URL from environment variables."""
     return os.getenv(
-        "DATABASE_URL",
-        "postgresql+asyncpg://temporal:temporal@localhost:5432/convoy",
+        "DATABASE_URL"
     )
 
 
