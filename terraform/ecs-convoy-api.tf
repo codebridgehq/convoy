@@ -78,6 +78,9 @@ resource "aws_ecs_service" "convoy_api" {
   desired_count   = var.api_desired_count
   launch_type     = "FARGATE"
 
+  # Enable ECS Exec for SSM Session Manager access (used for DB port forwarding)
+  enable_execute_command = true
+
   network_configuration {
     subnets          = module.vpc.private_subnets
     security_groups  = [aws_security_group.ecs_api.id]

@@ -36,3 +36,25 @@ resource "aws_cloudwatch_log_group" "temporal" {
     ManagedBy   = "Terraform"
   }
 }
+
+resource "aws_cloudwatch_log_group" "temporal_schema_setup" {
+  name              = "/ecs/temporal-schema-setup${var.suffix}"
+  retention_in_days = 30
+
+  tags = {
+    Name        = "temporal-schema-setup-logs${var.suffix}"
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_cloudwatch_log_group" "temporal_create_namespace" {
+  name              = "/ecs/temporal-create-namespace${var.suffix}"
+  retention_in_days = 30
+
+  tags = {
+    Name        = "temporal-create-namespace-logs${var.suffix}"
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+  }
+}

@@ -108,6 +108,24 @@ variable "temporal_version" {
   default     = "1.29.2"
 }
 
+variable "temporal_admin_tools_version" {
+  description = "Temporal admin-tools version for schema setup and namespace creation"
+  type        = string
+  default     = "1.29.2"
+}
+
+variable "temporal_ui_version" {
+  description = "Temporal UI version"
+  type        = string
+  default     = "2.36.2"
+}
+
+variable "postgresql_version" {
+  description = "PostgreSQL version for RDS and Docker images"
+  type        = string
+  default     = "16"
+}
+
 # =============================================================================
 # Application Configuration
 # =============================================================================

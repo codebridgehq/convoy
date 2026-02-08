@@ -94,8 +94,28 @@ resource "aws_iam_role" "convoy_api_task" {
   }
 }
 
-# convoy-api doesn't need special permissions beyond basic ECS task permissions
-# Add policies here if needed in the future
+# SSM permissions for ECS Exec (enables SSM Session Manager port forwarding to RDS)
+resource "aws_iam_role_policy" "convoy_api_ssm" {
+  name = "ssm-exec-access"
+  role = aws_iam_role.convoy_api_task.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "SSMMessages"
+        Effect = "Allow"
+        Action = [
+          "ssmmessages:CreateControlChannel",
+          "ssmmessages:CreateDataChannel",
+          "ssmmessages:OpenControlChannel",
+          "ssmmessages:OpenDataChannel"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
 
 # =============================================================================
 # convoy-worker Task Role
