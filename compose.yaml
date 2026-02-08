@@ -24,8 +24,8 @@ services:
     depends_on:
       convoy-postgresql:
         condition: service_healthy
-      temporal:
-        condition: service_started
+      temporal-create-namespace:
+        condition: service_completed_successfully
     networks:
       - temporal-network
     restart: unless-stopped
@@ -62,8 +62,8 @@ services:
     depends_on:
       convoy-postgresql:
         condition: service_healthy
-      temporal:
-        condition: service_started
+      temporal-create-namespace:
+        condition: service_completed_successfully
     networks:
       - temporal-network
     restart: unless-stopped
@@ -105,8 +105,11 @@ services:
       timeout: 5s
       retries: 10
 
-  temporal:
-    container_name: temporal
+  # Temporal schema setup - runs before temporal server to initialize database
+  temporal-schema-setup:
+    container_name: temporal-schema-setup
+    image: temporalio/admin-tools:${TEMPORAL_ADMINTOOLS_VERSION}
+    restart: on-failure:6
     depends_on:
       temporal-postgresql:
         condition: service_healthy
@@ -116,21 +119,65 @@ services:
       - POSTGRES_USER=temporal
       - POSTGRES_PWD=temporal
       - POSTGRES_SEEDS=temporal-postgresql
+      - SQL_PASSWORD=temporal
+    networks:
+      - temporal-network
+    volumes:
+      - ./scripts:/scripts
+    entrypoint: ["/bin/sh"]
+    command: /scripts/setup-postgres.sh
+
+  temporal:
+    container_name: temporal
+    image: temporalio/server:${TEMPORAL_VERSION}
+    depends_on:
+      temporal-schema-setup:
+        condition: service_completed_successfully
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=temporal-postgresql
+      - BIND_ON_IP=0.0.0.0
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
-      - TEMPORAL_ADDRESS=temporal:7233
-      - TEMPORAL_CLI_ADDRESS=temporal:7233
-    image: temporalio/auto-setup:${TEMPORAL_VERSION}
     networks:
       - temporal-network
     ports:
       - 7233:7233
     volumes:
       - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "7233"]
+      interval: 5s
+      timeout: 3s
+      start_period: 30s
+      retries: 60
 
+  # Creates the default namespace after temporal server is healthy
+  temporal-create-namespace:
+    container_name: temporal-create-namespace
+    image: temporalio/admin-tools:${TEMPORAL_ADMINTOOLS_VERSION}
+    restart: on-failure:5
+    depends_on:
+      temporal:
+        condition: service_healthy
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - DEFAULT_NAMESPACE=default
+    networks:
+      - temporal-network
+    volumes:
+      - ./scripts:/scripts
+    entrypoint: ["/bin/sh"]
+    command: /scripts/create-namespace.sh
+
+  # Interactive admin tools for debugging/management
   temporal-admin-tools:
     container_name: temporal-admin-tools
     depends_on:
-      - temporal
+      temporal:
+        condition: service_healthy
     environment:
       - TEMPORAL_ADDRESS=temporal:7233
       - TEMPORAL_CLI_ADDRESS=temporal:7233
