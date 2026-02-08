@@ -111,7 +111,7 @@ variable "temporal_version" {
 variable "temporal_admin_tools_version" {
   description = "Temporal admin-tools version for schema setup and namespace creation"
   type        = string
-  default     = "1.29.2"
+  default     = "1.29"
 }
 
 variable "temporal_ui_version" {
