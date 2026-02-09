@@ -394,7 +394,7 @@ async def process_batch_results(batch_job_id: str) -> list[str]:
                 cargo_request_id=cargo_request.id,
                 success=batch_result.success,
                 response=batch_result.response if batch_result.success else None,
-                error_message=batch_result.error_message if not batch_result.success else None,
+                error_message=batch_result.error if not batch_result.success else None,
                 expires_at=datetime.now(timezone.utc) + timedelta(days=30),
             )
             session.add(cargo_result)
