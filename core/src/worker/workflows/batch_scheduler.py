@@ -23,6 +23,14 @@ class BatchSchedulerInput:
 
     provider: str
     check_interval_seconds: int = 30
+    # Track iterations across continue-as-new to maintain total count for logging
+    total_iterations: int = 0
+
+
+# Maximum iterations before triggering continue-as-new to reset workflow history.
+# Each iteration can generate multiple events (activities, timers, child workflows).
+# With ~10-20 events per iteration, 500 iterations keeps us well under the 50K limit.
+MAX_ITERATIONS_BEFORE_CONTINUE_AS_NEW = 500
 
 
 @workflow.defn
@@ -48,7 +56,12 @@ class BatchSchedulerWorkflow:
             maximum_attempts=5,
         )
 
-        workflow.logger.info(f"Starting batch scheduler for provider: {input.provider}")
+        workflow.logger.info(
+            f"Starting batch scheduler for provider: {input.provider} "
+            f"(total iterations so far: {input.total_iterations})"
+        )
+
+        iteration_count = 0
 
         while True:
             try:
@@ -140,6 +153,23 @@ class BatchSchedulerWorkflow:
             except Exception as e:
                 workflow.logger.error(f"Error in batch scheduler for {input.provider}: {e}")
                 # Continue running despite errors
+
+            iteration_count += 1
+
+            # Check if we need to continue-as-new to reset workflow history
+            # This prevents hitting Temporal's history size limit (~50K events)
+            if iteration_count >= MAX_ITERATIONS_BEFORE_CONTINUE_AS_NEW:
+                workflow.logger.info(
+                    f"Reached {iteration_count} iterations for {input.provider}, "
+                    f"continuing as new workflow to reset history"
+                )
+                workflow.continue_as_new(
+                    BatchSchedulerInput(
+                        provider=input.provider,
+                        check_interval_seconds=input.check_interval_seconds,
+                        total_iterations=input.total_iterations + iteration_count,
+                    )
+                )
 
             # Wait before next check
             await workflow.sleep(timedelta(seconds=input.check_interval_seconds))
