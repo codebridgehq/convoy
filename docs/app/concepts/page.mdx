@@ -1,0 +1,25 @@
+# Concepts
+
+Core concepts for understanding how Convoy works.
+
+## Overview
+
+Convoy is a batch processing system that:
+
+1. **Collects** individual requests via the API
+2. **Batches** them based on configurable thresholds
+3. **Submits** batches to AI providers (Bedrock, Anthropic)
+4. **Delivers** results to your callback URLs
+
+## Key Components
+
+- **Convoy API** - FastAPI service for request submission and tracking
+- **Convoy Worker** - Temporal worker for batch orchestration
+- **Temporal** - Workflow engine for reliable execution
+- **PostgreSQL** - Persistent storage for requests and results
+
+## Learn More
+
+- [Architecture](/concepts/architecture) - System design and data flow
+- [Cargo Lifecycle](/concepts/cargo-lifecycle) - Request status transitions
+- [Callbacks](/concepts/callbacks) - Result delivery mechanism

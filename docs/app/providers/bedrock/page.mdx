@@ -1,0 +1,142 @@
+# AWS Bedrock
+
+Use AWS Bedrock for batch inference with Claude models.
+
+## Prerequisites
+
+- AWS account with Bedrock access
+- S3 bucket for batch I/O
+- IAM role with required permissions
+
+## Configuration
+
+```bash
+# .env
+AWS_REGION=us-east-1
+AWS_PROFILE=your-profile
+BEDROCK_S3_BUCKET=your-convoy-bucket
+BEDROCK_ROLE_ARN=arn:aws:iam::123456789012:role/BedrockBatchRole
+BEDROCK_S3_INPUT_PREFIX=batch-inputs
+BEDROCK_S3_OUTPUT_PREFIX=batch-outputs
+```
+
+## S3 Bucket Setup
+
+Create an S3 bucket for batch input/output files:
+
+```bash
+aws s3 mb s3://your-convoy-bucket --region us-east-1
+```
+
+## IAM Role
+
+Create an IAM role with these permissions:
+
+### Trust Policy
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "bedrock.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+```
+
+### Permissions Policy
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::your-convoy-bucket",
+        "arn:aws:s3:::your-convoy-bucket/*"
+      ]
+    }
+  ]
+}
+```
+
+### Worker Permissions
+
+The Convoy worker needs these permissions:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:CreateModelInvocationJob",
+        "bedrock:GetModelInvocationJob",
+        "bedrock:ListModelInvocationJobs",
+        "bedrock:StopModelInvocationJob"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::your-convoy-bucket",
+        "arn:aws:s3:::your-convoy-bucket/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::123456789012:role/BedrockBatchRole"
+    }
+  ]
+}
+```
+
+## Supported Models
+
+| Model | ARN |
+|-------|-----|
+| Claude 3 Haiku | `arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-haiku-20240307-v1:0` |
+| Claude 3 Sonnet | `arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0` |
+| Claude 3 Opus | `arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-opus-20240229-v1:0` |
+
+## Example Request
+
+```bash
+curl -X POST http://localhost:8000/cargo/load \
+  -H "Content-Type: application/json" \
+  -d '{
+    "params": {
+      "model": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-haiku-20240307-v1:0",
+      "max_tokens": 100,
+      "messages": [{"role": "user", "content": "Hello"}]
+    },
+    "callback_url": "https://example.com/callback"
+  }'
+```
+
+## How It Works
+
+1. Convoy collects requests and writes them to S3 as JSONL
+2. Creates a Bedrock batch inference job
+3. Polls job status until complete
+4. Reads results from S3 output location
+5. Delivers results via callbacks

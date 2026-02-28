@@ -1,0 +1,24 @@
+# Providers
+
+Convoy supports multiple AI providers for batch inference.
+
+## Supported Providers
+
+| Provider | Status | Description |
+|----------|--------|-------------|
+| AWS Bedrock | ✅ Supported | Batch inference via S3 |
+| Anthropic | ✅ Supported | Message Batches API |
+
+## Provider Selection
+
+Convoy automatically selects the provider based on the model identifier:
+
+| Model Pattern | Provider |
+|---------------|----------|
+| `arn:aws:bedrock:*` | Bedrock |
+| `claude-*` | Anthropic |
+
+## Setup Guides
+
+- [AWS Bedrock](/providers/bedrock) - S3 bucket and IAM setup
+- [Anthropic](/providers/anthropic) - API key configuration

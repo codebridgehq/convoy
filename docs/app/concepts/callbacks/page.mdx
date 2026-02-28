@@ -1,0 +1,142 @@
+# Callbacks
+
+When processing completes, Convoy delivers results to your callback URL.
+
+## How It Works
+
+1. Batch processing completes
+2. Convoy sends a POST request to your `callback_url`
+3. If delivery fails, Convoy retries with exponential backoff
+4. After max retries, status becomes `callback_failed`
+
+## Callback Payload
+
+```json
+{
+  "cargo_id": "crg_abc123def456",
+  "success": true,
+  "response": {
+    "id": "msg_01XFDUDYJgAACzvnptvVoYEL",
+    "type": "message",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "Hello! How can I help you today?"
+      }
+    ],
+    "model": "claude-sonnet-4-5",
+    "stop_reason": "end_turn",
+    "usage": {
+      "input_tokens": 10,
+      "output_tokens": 15
+    }
+  },
+  "error": null
+}
+```
+
+### Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `cargo_id` | string | Your request identifier |
+| `success` | boolean | Whether processing succeeded |
+| `response` | object | Model response (if success) |
+| `error` | string | Error message (if failed) |
+
+### Error Payload
+
+```json
+{
+  "cargo_id": "crg_abc123def456",
+  "success": false,
+  "response": null,
+  "error": "Rate limit exceeded"
+}
+```
+
+## Retry Policy
+
+Convoy retries failed deliveries with exponential backoff:
+
+| Attempt | Delay |
+|---------|-------|
+| 1 | Immediate |
+| 2 | 1 minute |
+| 3 | 5 minutes |
+| 4 | 15 minutes |
+| 5 | 1 hour |
+
+After 5 attempts (configurable via `CALLBACK_MAX_RETRIES`), the cargo status becomes `callback_failed`.
+
+## Requirements
+
+Your callback endpoint must:
+
+- Accept POST requests
+- Return `2xx` status code on success
+- Respond within 30 seconds (`CALLBACK_HTTP_TIMEOUT_SECONDS`)
+
+## Example Callback Server
+
+### Python (FastAPI)
+
+```python
+from fastapi import FastAPI, Request
+
+app = FastAPI()
+
+@app.post("/callback")
+async def handle_callback(request: Request):
+    payload = await request.json()
+    
+    cargo_id = payload["cargo_id"]
+    
+    if payload["success"]:
+        response = payload["response"]
+        content = response["content"][0]["text"]
+        print(f"Received result for {cargo_id}: {content}")
+    else:
+        error = payload["error"]
+        print(f"Error for {cargo_id}: {error}")
+    
+    return {"status": "received"}
+```
+
+### Node.js (Express)
+
+```javascript
+const express = require('express');
+const app = express();
+
+app.use(express.json());
+
+app.post('/callback', (req, res) => {
+  const { cargo_id, success, response, error } = req.body;
+  
+  if (success) {
+    const content = response.content[0].text;
+    console.log(`Received result for ${cargo_id}: ${content}`);
+  } else {
+    console.log(`Error for ${cargo_id}: ${error}`);
+  }
+  
+  res.json({ status: 'received' });
+});
+
+app.listen(3000);
+```
+
+## Monitoring Callbacks
+
+Check callback status via tracking:
+
+```bash
+curl http://localhost:8000/cargo/{cargo_id}/tracking
+```
+
+Status values:
+- `callback_pending` - Delivery in progress
+- `callback_delivered` - Successfully delivered
+- `callback_failed` - All retries exhausted

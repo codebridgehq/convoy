@@ -1,0 +1,78 @@
+# Getting Started
+
+## Prerequisites
+
+- Docker and Docker Compose
+- AWS credentials (for Bedrock provider)
+- Anthropic API key (for Anthropic provider)
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/your-org/convoy.git
+cd convoy
+```
+
+2. Copy the environment file:
+```bash
+cp .env.example .env
+```
+
+3. Configure your provider credentials in `.env` (see [Configuration](/getting-started/configuration))
+
+4. Start the services:
+```bash
+docker compose up -d
+```
+
+5. Verify it's running:
+```bash
+curl http://localhost:8000/health
+```
+
+Response:
+```json
+{"status": "ok"}
+```
+
+## Submit Your First Request
+
+```bash
+curl -X POST http://localhost:8000/cargo/load \
+  -H "Content-Type: application/json" \
+  -d '{
+    "params": {
+      "model": "claude-sonnet-4-5",
+      "max_tokens": 100,
+      "messages": [{"role": "user", "content": "Say hello"}]
+    },
+    "callback_url": "https://your-server.com/callback"
+  }'
+```
+
+## Track Your Request
+
+```bash
+curl http://localhost:8000/cargo/{cargo_id}/tracking
+```
+
+## Access Points
+
+| Service | URL |
+|---------|-----|
+| Convoy API | http://localhost:8000 |
+| API Docs (Swagger) | http://localhost:8000/docs |
+| Temporal UI | http://localhost:8080 |
+
+## Stop Services
+
+```bash
+docker compose down
+```
+
+## Run Tests
+
+```bash
+docker compose --profile tests run --rm convoy-tests
+```

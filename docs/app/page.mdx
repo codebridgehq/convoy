@@ -1,1 +1,47 @@
-# Hello World!
+# Convoy
+
+Convoy simplifies batch processing for AI inference. Send individual requests and Convoy automatically groups them into batches.
+
+## How It Works
+
+1. **Submit requests** via the `/cargo/load` endpoint
+2. **Convoy batches** them automatically (100 requests or 1 hour, whichever comes first)
+3. **Provider processes** the batch (AWS Bedrock or Anthropic)
+4. **Results delivered** to your callback URL
+
+## Key Features
+
+- **Automatic batching** - No manual batch management needed
+- **Multiple providers** - AWS Bedrock and Anthropic support
+- **Reliable delivery** - Callbacks with exponential backoff retry
+- **Status tracking** - Monitor your requests through the lifecycle
+
+## Quick Example
+
+```bash
+curl -X POST http://localhost:8000/cargo/load \
+  -H "Content-Type: application/json" \
+  -d '{
+    "params": {
+      "model": "claude-sonnet-4-5",
+      "max_tokens": 1024,
+      "messages": [{"role": "user", "content": "Hello"}]
+    },
+    "callback_url": "https://your-server.com/callback"
+  }'
+```
+
+Response:
+```json
+{
+  "cargo_id": "crg_abc123",
+  "status": "success",
+  "message": "Cargo loaded successfully"
+}
+```
+
+## Next Steps
+
+- [Getting Started](/getting-started) - Install and run Convoy
+- [API Reference](/api) - Full API documentation
+- [Concepts](/concepts) - Understand how Convoy works

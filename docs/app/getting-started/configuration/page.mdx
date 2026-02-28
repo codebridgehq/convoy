@@ -1,0 +1,83 @@
+# Configuration
+
+All configuration is done via environment variables. Copy `.env.example` to `.env` and modify as needed.
+
+## Batch Processing
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BATCH_SIZE_THRESHOLD` | `100` | Requests per batch before auto-submit |
+| `BATCH_TIME_THRESHOLD_SECONDS` | `3600` | Max wait time (1 hour) before batching |
+| `BATCH_CHECK_INTERVAL_SECONDS` | `30` | How often to check for pending requests |
+
+## Callback Delivery
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CALLBACK_MAX_RETRIES` | `5` | Max delivery attempts |
+| `CALLBACK_HTTP_TIMEOUT_SECONDS` | `30` | HTTP timeout per attempt |
+
+Retry intervals: 1min → 5min → 15min → 1hr (exponential backoff)
+
+## Result Cleanup
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `RESULT_RETENTION_DAYS` | `30` | Days to keep results before cleanup |
+| `CLEANUP_BATCH_SIZE` | `1000` | Records per cleanup batch |
+
+## Database
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_URL` | - | PostgreSQL connection string |
+| `DATABASE_ECHO` | `false` | Log SQL queries |
+
+Example:
+```
+DATABASE_URL=postgresql+asyncpg://convoy:convoy@localhost:5433/convoy
+```
+
+## Temporal
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TEMPORAL_ADDRESS` | `temporal:7233` | Temporal server address |
+| `TEMPORAL_NAMESPACE` | `default` | Temporal namespace |
+| `TEMPORAL_TASK_QUEUE` | `convoy-tasks` | Task queue name |
+
+## AWS Bedrock
+
+| Variable | Description |
+|----------|-------------|
+| `AWS_REGION` | AWS region (e.g., `us-east-1`) |
+| `AWS_PROFILE` | AWS credentials profile |
+| `BEDROCK_S3_BUCKET` | S3 bucket for batch I/O |
+| `BEDROCK_ROLE_ARN` | IAM role for Bedrock batch |
+| `BEDROCK_S3_INPUT_PREFIX` | S3 prefix for inputs |
+| `BEDROCK_S3_OUTPUT_PREFIX` | S3 prefix for outputs |
+
+## Anthropic
+
+| Variable | Description |
+|----------|-------------|
+| `ANTHROPIC_API_KEY` | Your Anthropic API key |
+
+## Example .env
+
+```bash
+# Database
+DATABASE_URL=postgresql+asyncpg://convoy:convoy@localhost:5433/convoy
+
+# Batch settings
+BATCH_SIZE_THRESHOLD=100
+BATCH_TIME_THRESHOLD_SECONDS=3600
+
+# AWS Bedrock
+AWS_REGION=us-east-1
+BEDROCK_S3_BUCKET=my-convoy-bucket
+BEDROCK_ROLE_ARN=arn:aws:iam::123456789:role/BedrockBatchRole
+
+# Anthropic (optional)
+ANTHROPIC_API_KEY=sk-ant-...
+```

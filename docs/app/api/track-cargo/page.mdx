@@ -1,0 +1,101 @@
+# Track Cargo
+
+Get the current status of a submitted request.
+
+```
+GET /cargo/{cargo_id}/tracking
+```
+
+## Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `cargo_id` | string | The cargo ID from `/cargo/load` response |
+
+## Response
+
+```json
+{
+  "cargo_id": "crg_abc123def456",
+  "status": "processing",
+  "status_description": "Batch is being processed by the provider",
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:35:00Z"
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `cargo_id` | Request identifier |
+| `status` | Current status (see below) |
+| `status_description` | Human-readable status |
+| `created_at` | When request was submitted |
+| `updated_at` | Last status change |
+
+## Status Values
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Waiting to be assigned to a batch |
+| `batched` | Assigned to a batch job |
+| `processing` | Batch is being processed |
+| `completed` | Processing completed |
+| `failed` | Processing failed |
+| `callback_pending` | Result ready, delivering callback |
+| `callback_delivered` | Callback sent successfully |
+| `callback_failed` | Callback delivery failed |
+
+See [Cargo Lifecycle](/concepts/cargo-lifecycle) for the full state diagram.
+
+## Examples
+
+### curl
+
+```bash
+curl http://localhost:8000/cargo/crg_abc123def456/tracking
+```
+
+### Python
+
+```python
+import httpx
+
+cargo_id = "crg_abc123def456"
+response = httpx.get(f"http://localhost:8000/cargo/{cargo_id}/tracking")
+
+data = response.json()
+print(f"Status: {data['status']}")
+print(f"Description: {data['status_description']}")
+```
+
+### Polling Example
+
+```python
+import httpx
+import time
+
+def wait_for_completion(cargo_id: str, timeout: int = 3600) -> dict:
+    """Poll until cargo is processed or timeout."""
+    start = time.time()
+    terminal_statuses = {"callback_delivered", "callback_failed", "failed"}
+    
+    while time.time() - start < timeout:
+        response = httpx.get(
+            f"http://localhost:8000/cargo/{cargo_id}/tracking"
+        )
+        data = response.json()
+        
+        if data["status"] in terminal_statuses:
+            return data
+        
+        time.sleep(30)  # Poll every 30 seconds
+    
+    raise TimeoutError(f"Cargo {cargo_id} not completed in {timeout}s")
+```
+
+## Errors
+
+| Status | Description |
+|--------|-------------|
+| `404` | Cargo not found |
+| `500` | Internal server error |

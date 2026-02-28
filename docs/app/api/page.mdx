@@ -1,0 +1,26 @@
+# API Reference
+
+Base URL: `http://localhost:8000`
+
+## Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/cargo/load` | Submit a request for batch processing |
+| `GET` | `/cargo/{cargo_id}/tracking` | Get status of a request |
+| `GET` | `/health` | Health check |
+
+## Response Format
+
+All responses are JSON. Successful responses return `2xx` status codes.
+
+Error responses:
+```json
+{
+  "detail": "Error message"
+}
+```
+
+## Interactive Docs
+
+Swagger UI available at: http://localhost:8000/docs

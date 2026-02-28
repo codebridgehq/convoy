@@ -1,0 +1,141 @@
+# Load Cargo
+
+Submit a request for batch processing.
+
+```
+POST /cargo/load
+```
+
+## Request Body
+
+```json
+{
+  "params": {
+    "model": "claude-sonnet-4-5",
+    "max_tokens": 1024,
+    "messages": [
+      {"role": "user", "content": "Your prompt here"}
+    ],
+    "system": "Optional system prompt",
+    "temperature": 0.7,
+    "top_p": 0.9,
+    "top_k": 50,
+    "stop_sequences": ["STOP"]
+  },
+  "callback_url": "https://your-server.com/callback"
+}
+```
+
+### Parameters
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `params.model` | string | Yes | Model identifier |
+| `params.max_tokens` | integer | No | Max tokens to generate (default: 1024) |
+| `params.messages` | array | Yes | Conversation messages |
+| `params.system` | string | No | System prompt |
+| `params.temperature` | float | No | Sampling temperature (0.0-1.0) |
+| `params.top_p` | float | No | Top-p sampling (0.0-1.0) |
+| `params.top_k` | integer | No | Top-k sampling |
+| `params.stop_sequences` | array | No | Stop sequences |
+| `callback_url` | string | Yes | URL to receive results |
+
+### Message Format
+
+```json
+{
+  "role": "user",
+  "content": "Message text"
+}
+```
+
+Or with content blocks:
+```json
+{
+  "role": "user",
+  "content": [
+    {"type": "text", "text": "Message text"}
+  ]
+}
+```
+
+## Response
+
+```json
+{
+  "cargo_id": "crg_abc123def456",
+  "status": "success",
+  "message": "Cargo loaded successfully"
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `cargo_id` | Unique identifier for tracking |
+| `status` | `success` or `error` |
+| `message` | Result description |
+
+## Examples
+
+### curl
+
+```bash
+curl -X POST http://localhost:8000/cargo/load \
+  -H "Content-Type: application/json" \
+  -d '{
+    "params": {
+      "model": "claude-sonnet-4-5",
+      "max_tokens": 100,
+      "messages": [{"role": "user", "content": "Hello"}]
+    },
+    "callback_url": "https://example.com/callback"
+  }'
+```
+
+### Python
+
+```python
+import httpx
+
+response = httpx.post(
+    "http://localhost:8000/cargo/load",
+    json={
+        "params": {
+            "model": "claude-sonnet-4-5",
+            "max_tokens": 100,
+            "messages": [{"role": "user", "content": "Hello"}]
+        },
+        "callback_url": "https://example.com/callback"
+    }
+)
+
+data = response.json()
+cargo_id = data["cargo_id"]
+print(f"Submitted: {cargo_id}")
+```
+
+### JavaScript
+
+```javascript
+const response = await fetch("http://localhost:8000/cargo/load", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    params: {
+      model: "claude-sonnet-4-5",
+      max_tokens: 100,
+      messages: [{ role: "user", content: "Hello" }]
+    },
+    callback_url: "https://example.com/callback"
+  })
+});
+
+const { cargo_id } = await response.json();
+```
+
+## Errors
+
+| Status | Description |
+|--------|-------------|
+| `400` | Invalid request body |
+| `500` | Internal server error |

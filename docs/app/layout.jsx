@@ -1,5 +1,5 @@
 import { Footer, Layout, Navbar } from 'nextra-theme-docs'
-import { Banner, Head } from 'nextra/components'
+import { Head } from 'nextra/components'
 import { getPageMap } from 'nextra/page-map'
 import 'nextra-theme-docs/style.css'
 import './globals.css'
@@ -9,15 +9,13 @@ export const metadata = {
   // For more information on metadata API, see: https://nextjs.org/docs/app/building-your-application/optimizing/metadata
 }
  
-const banner = <Banner storageKey="some-key">Nextra 4.0 is released 🎉</Banner>
 const navbar = (
   <Navbar
     projectLink="https://github.com/Sonic-Web-Dev/convoy"
-    logo={<b>Nextra</b>}
-    // ... Your additional navbar options
+    logo={<b>🚂 Convoy</b>}
   />
 )
-const footer = <Footer>MIT {new Date().getFullYear()} © Nextra.</Footer>
+const footer = <Footer>MIT {new Date().getFullYear()} © Convoy</Footer>
  
 export default async function RootLayout({ children }) {
   return (
@@ -44,7 +42,6 @@ export default async function RootLayout({ children }) {
       </Head>
       <body>
         <Layout
-          banner={banner}
           navbar={navbar}
           pageMap={await getPageMap()}
           docsRepositoryBase="https://github.com/Sonic-Web-Dev/convoy/tree/master/docs"

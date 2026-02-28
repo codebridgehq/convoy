@@ -1,0 +1,63 @@
+# Anthropic
+
+Use Anthropic's Message Batches API directly.
+
+## Prerequisites
+
+- Anthropic API key
+
+## Configuration
+
+```bash
+# .env
+ANTHROPIC_API_KEY=sk-ant-api03-...
+```
+
+## Supported Models
+
+| Model | Identifier |
+|-------|------------|
+| Claude 3.5 Sonnet | `claude-sonnet-4-5` |
+| Claude 3.5 Haiku | `claude-3-5-haiku-20241022` |
+| Claude 3 Opus | `claude-3-opus-20240229` |
+| Claude 3 Sonnet | `claude-3-sonnet-20240229` |
+| Claude 3 Haiku | `claude-3-haiku-20240307` |
+
+## Example Request
+
+```bash
+curl -X POST http://localhost:8000/cargo/load \
+  -H "Content-Type: application/json" \
+  -d '{
+    "params": {
+      "model": "claude-sonnet-4-5",
+      "max_tokens": 100,
+      "messages": [{"role": "user", "content": "Hello"}]
+    },
+    "callback_url": "https://example.com/callback"
+  }'
+```
+
+## How It Works
+
+1. Convoy collects requests
+2. Submits batch via Anthropic Message Batches API
+3. Polls batch status until complete
+4. Retrieves results from API
+5. Delivers results via callbacks
+
+## API Limits
+
+Anthropic batch API has these limits:
+
+| Limit | Value |
+|-------|-------|
+| Max requests per batch | 10,000 |
+| Max concurrent batches | Varies by tier |
+| Batch expiration | 24 hours |
+
+Convoy's default batch size (100) is well within these limits.
+
+## Pricing
+
+Batch API pricing is typically 50% cheaper than real-time API. Check [Anthropic's pricing page](https://www.anthropic.com/pricing) for current rates.

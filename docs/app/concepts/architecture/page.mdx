@@ -1,0 +1,137 @@
+# Architecture
+
+## System Overview
+
+```mermaid
+graph TB
+    subgraph ConvoyServices["Convoy Services"]
+        API["Convoy API<br/>(FastAPI)<br/>:8000"]
+        Worker["Convoy Worker<br/>(Temporal Worker)"]
+    end
+
+    subgraph Storage["Storage"]
+        PG["PostgreSQL<br/>:5433"]
+    end
+
+    subgraph TemporalStack["Temporal"]
+        Temporal["Temporal Server<br/>:7233"]
+        TemporalUI["Temporal UI<br/>:8080"]
+    end
+
+    subgraph External["External"]
+        Bedrock["AWS Bedrock"]
+        S3["AWS S3"]
+        Anthropic["Anthropic API"]
+        Webhook["Your Webhook"]
+    end
+
+    Client["Client"] -->|"POST /cargo/load"| API
+    API -->|"Store request"| PG
+    Worker -->|"Read/Write"| PG
+    Worker -->|"Execute workflows"| Temporal
+    Worker -->|"Batch inference"| Bedrock
+    Worker -->|"Batch I/O"| S3
+    Worker -->|"Batch inference"| Anthropic
+    Worker -->|"Deliver results"| Webhook
+```
+
+## Components
+
+### Convoy API
+
+FastAPI application handling:
+- Request submission (`POST /cargo/load`)
+- Status tracking (`GET /cargo/{id}/tracking`)
+- Health checks (`GET /health`)
+
+### Convoy Worker
+
+Temporal worker running three workflows:
+
+| Workflow | Purpose |
+|----------|---------|
+| `BatchSchedulerWorkflow` | Monitors pending requests, creates batches, submits to providers |
+| `CallbackDeliveryWorkflow` | Delivers results to callback URLs with retry |
+| `ResultCleanupWorkflow` | Removes expired results (default: 30 days) |
+
+### Temporal
+
+Workflow orchestration engine providing:
+- Durable execution
+- Automatic retries
+- Workflow history and visibility
+
+### PostgreSQL
+
+Stores:
+- Cargo requests
+- Batch jobs
+- Processing results
+- Callback delivery status
+
+## Data Flow
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant API as Convoy API
+    participant DB as PostgreSQL
+    participant W as Worker
+    participant P as Provider
+    participant WH as Your Webhook
+
+    C->>API: POST /cargo/load
+    API->>DB: Store request (PENDING)
+    API-->>C: cargo_id
+
+    loop Every 30s
+        W->>DB: Check pending requests
+        alt Threshold met
+            W->>DB: Create batch
+            W->>P: Submit batch
+            P-->>W: Results
+            W->>DB: Store results
+            W->>WH: POST callback
+        end
+    end
+```
+
+## Database Schema
+
+### cargo_requests
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID | Primary key |
+| `cargo_id` | string | Public identifier |
+| `provider` | enum | bedrock, anthropic |
+| `model` | string | Model identifier |
+| `params` | JSONB | Request parameters |
+| `callback_url` | string | Delivery URL |
+| `status` | enum | Current status |
+| `batch_job_id` | UUID | Associated batch |
+
+### batch_jobs
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID | Primary key |
+| `provider` | enum | bedrock, anthropic |
+| `provider_job_id` | string | External job ID |
+| `status` | enum | Batch status |
+| `request_count` | int | Requests in batch |
+
+### cargo_results
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID | Primary key |
+| `cargo_request_id` | UUID | Parent request |
+| `success` | bool | Processing success |
+| `response` | JSONB | Model response |
+| `expires_at` | timestamp | Cleanup date |
+
+### callback_deliveries
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID | Primary key |
+| `cargo_request_id` | UUID | Parent request |
+| `status` | enum | Delivery status |
+| `attempt_count` | int | Delivery attempts |
