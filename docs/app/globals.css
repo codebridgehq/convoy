@@ -1,0 +1,65 @@
+/* docs/app/globals.css */
+/* Custom theme overrides for Nextra to match your brand colors */
+
+/* 
+ * Your color palette:
+ * Primary: hsl(340 100% 71%) - Vibrant pink/magenta (configured in Head component)
+ * Background Light: hsl(0 0% 100%) - White (configured in Head component)
+ * Background Dark: hsl(264 49% 21%) - Deep purple (configured in Head component)
+ * Foreground Light: hsl(264 49% 21%) - Deep purple
+ * Foreground Dark: hsl(0 0% 100%) - White
+ * 
+ * Note: Primary color and background are set via <Head> component props in layout.jsx
+ * This file contains additional overrides for gray/neutral tones and other elements.
+ */
+
+:root {
+  /* Override gray/neutral colors to use your purple tones */
+  --x-color-gray-50: hsl(264 30% 98%);
+  --x-color-gray-100: hsl(264 30% 96%);
+  --x-color-gray-200: hsl(264 30% 92%);
+  --x-color-gray-300: hsl(264 30% 85%);
+  --x-color-gray-400: hsl(265 36% 65%);
+  --x-color-gray-500: hsl(265 36% 50%);
+  --x-color-gray-600: hsl(264 40% 40%);
+  --x-color-gray-700: hsl(264 45% 30%);
+  --x-color-gray-800: hsl(264 49% 21%);
+  --x-color-gray-900: hsl(261 51% 12%);
+  
+  /* Neutral colors (sidebar, borders, etc.) */
+  --x-color-neutral-50: hsl(264 30% 98%);
+  --x-color-neutral-100: hsl(264 30% 96%);
+  --x-color-neutral-200: hsl(264 30% 92%);
+  --x-color-neutral-300: hsl(264 30% 85%);
+  --x-color-neutral-400: hsl(265 36% 65%);
+  --x-color-neutral-500: hsl(265 36% 50%);
+  --x-color-neutral-600: hsl(264 40% 40%);
+  --x-color-neutral-700: hsl(264 45% 30%);
+  --x-color-neutral-800: hsl(264 49% 21%);
+  --x-color-neutral-900: hsl(261 51% 12%);
+}
+
+.dark {
+  /* Override gray/neutral for dark mode */
+  --x-color-gray-50: hsl(0 0% 100%);
+  --x-color-gray-100: hsl(0 0% 98%);
+  --x-color-gray-200: hsl(265 36% 85%);
+  --x-color-gray-300: hsl(265 36% 74%);
+  --x-color-gray-400: hsl(265 36% 60%);
+  --x-color-gray-500: hsl(264 40% 45%);
+  --x-color-gray-600: hsl(264 40% 35%);
+  --x-color-gray-700: hsl(264 40% 28%);
+  --x-color-gray-800: hsl(264 49% 21%);
+  --x-color-gray-900: hsl(261 51% 12%);
+  
+  --x-color-neutral-50: hsl(0 0% 100%);
+  --x-color-neutral-100: hsl(0 0% 98%);
+  --x-color-neutral-200: hsl(265 36% 85%);
+  --x-color-neutral-300: hsl(265 36% 74%);
+  --x-color-neutral-400: hsl(265 36% 60%);
+  --x-color-neutral-500: hsl(264 40% 45%);
+  --x-color-neutral-600: hsl(264 40% 35%);
+  --x-color-neutral-700: hsl(264 40% 28%);
+  --x-color-neutral-800: hsl(264 49% 21%);
+  --x-color-neutral-900: hsl(261 51% 12%);
+}

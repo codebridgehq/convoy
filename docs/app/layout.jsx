@@ -2,6 +2,7 @@ import { Footer, Layout, Navbar } from 'nextra-theme-docs'
 import { Banner, Head } from 'nextra/components'
 import { getPageMap } from 'nextra/page-map'
 import 'nextra-theme-docs/style.css'
+import './globals.css'
  
 export const metadata = {
   // Define your metadata here
@@ -29,7 +30,15 @@ export default async function RootLayout({ children }) {
       suppressHydrationWarning
     >
       <Head
-      // ... Your additional head options
+        color={{
+          hue: { light: 340, dark: 340 },        // Pink/magenta primary color
+          saturation: { light: 100, dark: 100 }, // Full saturation
+          lightness: { light: 45, dark: 71 }     // Adjusted for light/dark mode visibility
+        }}
+        backgroundColor={{
+          light: "rgb(255,255,255)",              // White background for light mode
+          dark: "rgb(45,32,66)"                   // Deep purple background for dark mode (hsl 264 49% 21%)
+        }}
       >
         {/* Your additional tags should be passed as `children` of `<Head>` element */}
       </Head>
