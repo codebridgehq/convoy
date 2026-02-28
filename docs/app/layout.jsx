@@ -37,7 +37,7 @@ export default async function RootLayout({ children }) {
           banner={banner}
           navbar={navbar}
           pageMap={await getPageMap()}
-          docsRepositoryBase="https://github.com/shuding/nextra/tree/main/docs"
+          docsRepositoryBase="https://github.com/Sonic-Web-Dev/convoy/tree/master/docs"
           footer={footer}
           // ... Your additional layout options
         >
