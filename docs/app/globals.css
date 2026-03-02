@@ -1,14 +1,15 @@
 /* docs/app/globals.css */
-/* Custom theme overrides for Nextra to match your brand colors */
+/* Custom theme overrides for Nextra to match Convoy brand colors */
 
-/* 
- * Your color palette:
- * Primary: hsl(340 100% 71%) - Vibrant pink/magenta (configured in Head component)
- * Background Light: hsl(0 0% 100%) - White (configured in Head component)
- * Background Dark: hsl(264 49% 21%) - Deep purple (configured in Head component)
- * Foreground Light: hsl(264 49% 21%) - Deep purple
- * Foreground Dark: hsl(0 0% 100%) - White
- * 
+/*
+ * Convoy Brand Color Palette:
+ * Primary Pink: #FF6B9D - hsl(343 100% 71%)
+ * Dark Purple (background): #2D1B4E - rgb(45, 27, 78)
+ * Darker Purple (cards): #1A0F2E - rgb(26, 15, 46)
+ * Dark Pink (hover): #FF4D8C
+ * Light Pink (accents): #FFB6D9
+ * White (text): #FFFFFF
+ *
  * Note: Primary color and background are set via <Head> component props in layout.jsx
  * This file contains additional overrides for gray/neutral tones and other elements.
  */
@@ -37,6 +38,18 @@
   --x-color-neutral-700: hsl(264 45% 30%);
   --x-color-neutral-800: hsl(264 49% 21%);
   --x-color-neutral-900: hsl(261 51% 12%);
+  
+  /* Slate colors - used for text, override to dark purple in light mode */
+  --x-color-slate-50: hsl(264 30% 98%);
+  --x-color-slate-100: hsl(264 30% 96%);
+  --x-color-slate-200: hsl(264 30% 92%);
+  --x-color-slate-300: hsl(264 30% 85%);
+  --x-color-slate-400: hsl(265 36% 65%);
+  --x-color-slate-500: hsl(265 36% 50%);
+  --x-color-slate-600: hsl(264 40% 40%);
+  --x-color-slate-700: hsl(264 45% 30%);
+  --x-color-slate-800: hsl(264 49% 21%);  /* #2D1B4E - dark purple */
+  --x-color-slate-900: hsl(264 49% 21%);  /* #2D1B4E - dark purple for main text */
 }
 
 .dark {
@@ -62,4 +75,47 @@
   --x-color-neutral-700: hsl(264 40% 28%);
   --x-color-neutral-800: hsl(264 49% 21%);
   --x-color-neutral-900: hsl(261 51% 12%);
+  
+  /* Slate colors for dark mode - white/light for text */
+  --x-color-slate-50: hsl(0 0% 100%);   /* White for main text */
+  --x-color-slate-100: hsl(0 0% 98%);
+  --x-color-slate-200: hsl(265 36% 85%);
+  --x-color-slate-300: hsl(265 36% 74%);
+  --x-color-slate-400: hsl(265 36% 60%);
+  --x-color-slate-500: hsl(264 40% 45%);
+  --x-color-slate-600: hsl(264 40% 35%);
+  --x-color-slate-700: hsl(264 40% 28%);
+  --x-color-slate-800: hsl(264 49% 21%);
+  --x-color-slate-900: hsl(261 51% 12%);
+}
+
+/* Override Nextra's black/white utility classes with brand colors */
+
+/* Light mode: replace pure white backgrounds with a subtle purple-tinted off-white */
+.x\:bg-white {
+  background-color: #F8F5FC !important;  /* Very light purple tint */
+}
+
+/* Light mode: use dark purple for text instead of black */
+.x\:text-black,
+[class*="x:text-black"] {
+  color: #2D1B4E !important;
+}
+
+/* Dark mode: replace black backgrounds with darker purple (for contrast with main bg) */
+.dark .x\:dark\:bg-black,
+.x\:dark\:bg-black:where(.dark, .dark *) {
+  background-color: #1A0F2E !important;
+}
+
+/* Additional overrides for any elements using bg-black directly */
+.dark .bg-black,
+.dark [class*="bg-black"] {
+  background-color: #1A0F2E !important;
+}
+
+/* Override card/container backgrounds in dark mode to use darker purple */
+.dark .x\:dark\:bg-neutral-900,
+.x\:dark\:bg-neutral-900:where(.dark, .dark *) {
+  background-color: #1A0F2E !important;
 }

@@ -29,13 +29,13 @@ export default async function RootLayout({ children }) {
     >
       <Head
         color={{
-          hue: { light: 340, dark: 340 },        // Pink/magenta primary color
+          hue: { light: 343, dark: 343 },        // Pink primary color (#FF6B9D)
           saturation: { light: 100, dark: 100 }, // Full saturation
           lightness: { light: 45, dark: 71 }     // Adjusted for light/dark mode visibility
         }}
         backgroundColor={{
           light: "rgb(255,255,255)",              // White background for light mode
-          dark: "rgb(45,32,66)"                   // Deep purple background for dark mode (hsl 264 49% 21%)
+          dark: "rgb(45,27,78)"                   // Dark purple background (#2D1B4E)
         }}
       >
         {/* Your additional tags should be passed as `children` of `<Head>` element */}
