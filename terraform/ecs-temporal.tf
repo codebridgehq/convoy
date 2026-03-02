@@ -296,8 +296,6 @@ resource "aws_service_discovery_service" "temporal" {
     routing_policy = "MULTIVALUE"
   }
 
-  health_check_custom_config {}
-
   tags = {
     Name        = "temporal-discovery${var.suffix}"
     Environment = var.environment

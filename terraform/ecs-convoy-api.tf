@@ -125,8 +125,6 @@ resource "aws_service_discovery_service" "convoy_api" {
     routing_policy = "MULTIVALUE"
   }
 
-  health_check_custom_config {}
-
   tags = {
     Name        = "convoy-api-discovery${var.suffix}"
     Environment = var.environment
