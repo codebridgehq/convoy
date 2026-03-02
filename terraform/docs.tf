@@ -153,6 +153,31 @@ resource "aws_cloudfront_cache_policy" "docs" {
   }
 }
 
+# CloudFront Function to handle directory index (append index.html to directory requests)
+resource "aws_cloudfront_function" "docs_directory_index" {
+  name    = "docs-directory-index${var.suffix}"
+  runtime = "cloudfront-js-2.0"
+  comment = "Append index.html to directory requests for static site hosting"
+  publish = true
+  code    = <<-EOF
+    function handler(event) {
+      var request = event.request;
+      var uri = request.uri;
+      
+      // If URI ends with '/', append 'index.html'
+      if (uri.endsWith('/')) {
+        request.uri += 'index.html';
+      }
+      // If URI doesn't have a file extension, assume it's a directory and append '/index.html'
+      else if (!uri.includes('.')) {
+        request.uri += '/index.html';
+      }
+      
+      return request;
+    }
+  EOF
+}
+
 # CloudFront Distribution
 resource "aws_cloudfront_distribution" "docs" {
   enabled             = true
@@ -175,6 +200,11 @@ resource "aws_cloudfront_distribution" "docs" {
     cache_policy_id        = aws_cloudfront_cache_policy.docs.id
     viewer_protocol_policy = "redirect-to-https"
     compress               = true
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.docs_directory_index.arn
+    }
   }
 
   # Handle SPA routing - return 404.html for 404s
