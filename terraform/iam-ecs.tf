@@ -166,9 +166,9 @@ resource "aws_iam_role_policy" "convoy_worker_bedrock" {
         Resource = "*"
       },
       {
-        Sid    = "PassRoleToBedrock"
-        Effect = "Allow"
-        Action = "iam:PassRole"
+        Sid      = "PassRoleToBedrock"
+        Effect   = "Allow"
+        Action   = "iam:PassRole"
         Resource = aws_iam_role.bedrock_batch.arn
         Condition = {
           StringEquals = {

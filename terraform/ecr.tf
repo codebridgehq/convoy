@@ -13,7 +13,7 @@
 # Local values for ECR image URLs
 locals {
   ecr_prefix = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com"
-  
+
   # Temporal images from our ECR (must be pushed manually or via CI/CD)
   temporal_server_image      = "${local.ecr_prefix}/temporal/server:${var.temporal_version}"
   temporal_admin_tools_image = "${local.ecr_prefix}/temporal/admin-tools:${var.temporal_admin_tools_version}"

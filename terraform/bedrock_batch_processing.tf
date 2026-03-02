@@ -22,9 +22,9 @@ resource "aws_s3_bucket" "bedrock_batch" {
   bucket = local.bedrock_batch_bucket_name
 
   tags = {
-    Name        = local.bedrock_batch_bucket_name
-    Purpose     = "Bedrock batch inference input/output storage"
-    ManagedBy   = "Terraform"
+    Name      = local.bedrock_batch_bucket_name
+    Purpose   = "Bedrock batch inference input/output storage"
+    ManagedBy = "Terraform"
   }
 }
 

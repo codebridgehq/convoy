@@ -167,11 +167,11 @@ variable "callback_http_timeout_seconds" {
 }
 
 # =============================================================================
-# Optional HTTPS Configuration
+# API Domain Configuration
 # =============================================================================
 
-variable "acm_certificate_arn" {
-  description = "ACM certificate ARN for HTTPS (optional, leave empty for HTTP only)"
+variable "api_domain" {
+  description = "Domain name for API (e.g., api.cnvy.ai)"
   type        = string
-  default     = ""
+  default     = "api.cnvy.ai"
 }

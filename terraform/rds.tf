@@ -30,10 +30,10 @@ resource "aws_db_instance" "convoy" {
   identifier = "convoy-postgresql${var.suffix}"
 
   # Engine configuration
-  engine               = "postgres"
-  engine_version       = "15"
-  instance_class       = var.rds_instance_class
-  allocated_storage    = 20
+  engine                = "postgres"
+  engine_version        = "15"
+  instance_class        = var.rds_instance_class
+  allocated_storage     = 20
   max_allocated_storage = 100 # Enable storage autoscaling up to 100GB
 
   # Database configuration
@@ -55,12 +55,12 @@ resource "aws_db_instance" "convoy" {
   multi_az = var.environment == "prod"
 
   # Performance Insights (free tier available)
-  performance_insights_enabled = true
+  performance_insights_enabled          = true
   performance_insights_retention_period = 7
 
   # Deletion protection
-  deletion_protection = var.environment == "prod"
-  skip_final_snapshot = var.environment != "prod"
+  deletion_protection       = var.environment == "prod"
+  skip_final_snapshot       = var.environment != "prod"
   final_snapshot_identifier = var.environment == "prod" ? "convoy-postgresql-final-snapshot${var.suffix}" : null
 
   # Storage
@@ -82,10 +82,10 @@ resource "aws_db_instance" "temporal" {
   identifier = "temporal-postgresql${var.suffix}"
 
   # Engine configuration
-  engine               = "postgres"
-  engine_version       = "15"
-  instance_class       = var.rds_instance_class
-  allocated_storage    = 20
+  engine                = "postgres"
+  engine_version        = "15"
+  instance_class        = var.rds_instance_class
+  allocated_storage     = 20
   max_allocated_storage = 100 # Enable storage autoscaling up to 100GB
 
   # Database configuration
@@ -107,12 +107,12 @@ resource "aws_db_instance" "temporal" {
   multi_az = var.environment == "prod"
 
   # Performance Insights (free tier available)
-  performance_insights_enabled = true
+  performance_insights_enabled          = true
   performance_insights_retention_period = 7
 
   # Deletion protection
-  deletion_protection = var.environment == "prod"
-  skip_final_snapshot = var.environment != "prod"
+  deletion_protection       = var.environment == "prod"
+  skip_final_snapshot       = var.environment != "prod"
   final_snapshot_identifier = var.environment == "prod" ? "temporal-postgresql-final-snapshot${var.suffix}" : null
 
   # Storage
