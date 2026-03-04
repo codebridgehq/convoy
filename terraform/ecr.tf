@@ -181,3 +181,43 @@ resource "aws_ecr_lifecycle_policy" "convoy_worker" {
     ]
   })
 }
+
+# =============================================================================
+# ECR Repository - convoy-web
+# =============================================================================
+
+resource "aws_ecr_repository" "convoy_web" {
+  name                 = "convoy/web"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Name        = "convoy-web-ecr${var.suffix}"
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_ecr_lifecycle_policy" "convoy_web" {
+  repository = aws_ecr_repository.convoy_web.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep last 10 images"
+        selection = {
+          tagStatus   = "any"
+          countType   = "imageCountMoreThan"
+          countNumber = 10
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
+}

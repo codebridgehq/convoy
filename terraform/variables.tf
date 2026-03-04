@@ -175,3 +175,35 @@ variable "api_domain" {
   type        = string
   default     = "api.cnvy.ai"
 }
+
+# =============================================================================
+# Web Domain Configuration
+# =============================================================================
+
+variable "web_domain" {
+  description = "Primary domain name for web app (e.g., cnvy.ai)"
+  type        = string
+  default     = "cnvy.ai"
+}
+
+# =============================================================================
+# ECS - convoy-web Configuration
+# =============================================================================
+
+variable "web_cpu" {
+  description = "CPU units for convoy-web (1024 = 1 vCPU)"
+  type        = number
+  default     = 512
+}
+
+variable "web_memory" {
+  description = "Memory for convoy-web in MB"
+  type        = number
+  default     = 1024
+}
+
+variable "web_desired_count" {
+  description = "Desired number of convoy-web tasks"
+  type        = number
+  default     = 1
+}
