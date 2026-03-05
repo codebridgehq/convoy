@@ -9,22 +9,6 @@
 # =============================================================================
 
 # =============================================================================
-# Variables
-# =============================================================================
-
-variable "docs_domain" {
-  description = "Domain name for documentation site"
-  type        = string
-  default     = "docs.cnvy.ai"
-}
-
-variable "github_repo" {
-  description = "GitHub repository in format owner/repo"
-  type        = string
-  default     = "Sonic-Web-Dev/convoy"
-}
-
-# =============================================================================
 # ACM Certificate (must be in us-east-1 for CloudFront)
 # =============================================================================
 

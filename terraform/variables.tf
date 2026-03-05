@@ -207,3 +207,29 @@ variable "web_desired_count" {
   type        = number
   default     = 1
 }
+
+# =============================================================================
+# GitHub Repository Configuration
+# =============================================================================
+
+variable "github_repo" {
+  description = "GitHub repository in format owner/repo"
+  type        = string
+  default     = "codebridgehq/convoy"
+}
+
+variable "github_web_repo" {
+  description = "GitHub repository for convoy-web in format owner/repo"
+  type        = string
+  default     = "codebridgehq/convoy-web"
+}
+
+# =============================================================================
+# Docs Domain Configuration
+# =============================================================================
+
+variable "docs_domain" {
+  description = "Domain name for documentation site"
+  type        = string
+  default     = "docs.cnvy.ai"
+}
