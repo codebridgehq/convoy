@@ -5,9 +5,8 @@
 # This script handles the complete deployment workflow:
 # 1. Build and push Convoy images to ECR
 # 2. Optionally push Temporal images to ECR (skipped by default)
-# 3. Optionally push Web image to ECR (skipped by default)
-# 4. Optionally run Temporal schema setup
-# 5. Force new deployment of ECS services
+# 3. Optionally run Temporal schema setup
+# 4. Force new deployment of ECS services
 #
 # Usage:
 #   ./scripts/deploy.sh [OPTIONS]
@@ -16,7 +15,6 @@
 #   --region REGION           AWS region (default: us-east-1)
 #   --tag TAG                 Image tag (default: latest)
 #   --with-temporal           Also push Temporal images (skipped by default)
-#   --with-web                Also push Web image (skipped by default)
 #   --skip-convoy             Skip building Convoy images
 #   --run-schema-setup        Run Temporal schema setup task
 #   --run-namespace-setup     Run Temporal namespace creation task
@@ -42,7 +40,6 @@ IMAGE_TAG="${IMAGE_TAG:-latest}"
 CLUSTER="convoy-dev"
 PUSH_TEMPORAL=false  # Skipped by default - Temporal images rarely change
 PUSH_CONVOY=true
-PUSH_WEB=false       # Skipped by default - Web has its own deploy script
 RUN_SCHEMA_SETUP=false
 RUN_NAMESPACE_SETUP=false
 
@@ -65,10 +62,6 @@ while [[ $# -gt 0 ]]; do
             PUSH_TEMPORAL=true
             shift
             ;;
-        --with-web)
-            PUSH_WEB=true
-            shift
-            ;;
         --skip-convoy)
             PUSH_CONVOY=false
             shift
@@ -89,7 +82,6 @@ while [[ $# -gt 0 ]]; do
             echo "  --tag TAG                 Image tag (default: latest)"
             echo "  --cluster CLUSTER         ECS cluster name (default: convoy-dev)"
             echo "  --with-temporal           Also push Temporal images (skipped by default)"
-            echo "  --with-web                Also push Web image (skipped by default)"
             echo "  --skip-convoy             Skip building Convoy images"
             echo "  --run-schema-setup        Run Temporal schema setup task"
             echo "  --run-namespace-setup     Run Temporal namespace creation task"
@@ -113,7 +105,6 @@ echo -e "Image Tag:           ${YELLOW}${IMAGE_TAG}${NC}"
 echo -e "Cluster:             ${YELLOW}${CLUSTER}${NC}"
 echo -e "Push Temporal:       ${YELLOW}${PUSH_TEMPORAL}${NC}"
 echo -e "Push Convoy:         ${YELLOW}${PUSH_CONVOY}${NC}"
-echo -e "Push Web:            ${YELLOW}${PUSH_WEB}${NC}"
 echo -e "Run Schema Setup:    ${YELLOW}${RUN_SCHEMA_SETUP}${NC}"
 echo -e "Run Namespace Setup: ${YELLOW}${RUN_NAMESPACE_SETUP}${NC}"
 echo -e "${GREEN}==============================================================================${NC}"
@@ -137,18 +128,9 @@ else
 fi
 echo ""
 
-# Step 3: Build and push Web image (optional)
-if [ "$PUSH_WEB" = true ]; then
-    echo -e "${BLUE}Step 3: Building and pushing Web image to ECR...${NC}"
-    AWS_REGION="$REGION" IMAGE_TAG="$IMAGE_TAG" "${SCRIPT_DIR}/deploy-web.sh" --skip-build=false
-else
-    echo -e "${YELLOW}Step 3: Skipping Web image (use --with-web to include)${NC}"
-fi
-echo ""
-
-# Step 4: Run Temporal schema setup (if requested)
+# Step 3: Run Temporal schema setup (if requested)
 if [ "$RUN_SCHEMA_SETUP" = true ]; then
-    echo -e "${BLUE}Step 4: Running Temporal schema setup...${NC}"
+    echo -e "${BLUE}Step 3: Running Temporal schema setup...${NC}"
     
     # Get VPC configuration from ECS service
     TEMPORAL_SERVICE_CONFIG=$(aws ecs describe-services \
@@ -187,13 +169,13 @@ if [ "$RUN_SCHEMA_SETUP" = true ]; then
         echo "  Please run schema setup manually"
     fi
 else
-    echo -e "${YELLOW}Step 4: Skipping schema setup (use --run-schema-setup to enable)${NC}"
+    echo -e "${YELLOW}Step 3: Skipping schema setup (use --run-schema-setup to enable)${NC}"
 fi
 echo ""
 
-# Step 5: Run Temporal namespace setup (if requested)
+# Step 4: Run Temporal namespace setup (if requested)
 if [ "$RUN_NAMESPACE_SETUP" = true ]; then
-    echo -e "${BLUE}Step 5: Running Temporal namespace creation...${NC}"
+    echo -e "${BLUE}Step 4: Running Temporal namespace creation...${NC}"
     
     # Get VPC configuration from ECS service
     TEMPORAL_SERVICE_CONFIG=$(aws ecs describe-services \
@@ -229,12 +211,12 @@ if [ "$RUN_NAMESPACE_SETUP" = true ]; then
         echo "  Please run namespace creation manually"
     fi
 else
-    echo -e "${YELLOW}Step 5: Skipping namespace setup (use --run-namespace-setup to enable)${NC}"
+    echo -e "${YELLOW}Step 4: Skipping namespace setup (use --run-namespace-setup to enable)${NC}"
 fi
 echo ""
 
-# Step 6: Force new deployment of ECS services
-echo -e "${BLUE}Step 6: Forcing new deployment of ECS services...${NC}"
+# Step 5: Force new deployment of ECS services
+echo -e "${BLUE}Step 5: Forcing new deployment of ECS services...${NC}"
 
 # Update Temporal service
 echo "  Updating temporal service..."
@@ -249,12 +231,6 @@ if [ "$PUSH_CONVOY" = true ]; then
     aws ecs update-service --cluster "$CLUSTER" --service convoy-worker --force-new-deployment --query 'service.serviceName' --output text > /dev/null 2>&1 || echo "  (convoy-worker service may not exist yet)"
 fi
 
-# Update convoy-web service
-if [ "$PUSH_WEB" = true ]; then
-    echo "  Updating convoy-web service..."
-    aws ecs update-service --cluster "$CLUSTER" --service convoy-web --force-new-deployment --query 'service.serviceName' --output text > /dev/null 2>&1 || echo "  (convoy-web service may not exist yet)"
-fi
-
 echo -e "${GREEN}  ✓ Deployment triggered${NC}"
 echo ""
 
@@ -263,10 +239,9 @@ echo -e "${GREEN}✓ Deployment complete!${NC}"
 echo -e "${GREEN}==============================================================================${NC}"
 echo ""
 echo "Monitor deployment status:"
-echo "  aws ecs describe-services --cluster $CLUSTER --services temporal convoy-api convoy-worker convoy-web --query 'services[*].{name:serviceName,status:status,running:runningCount,desired:desiredCount}' --output table"
+echo "  aws ecs describe-services --cluster $CLUSTER --services temporal convoy-api convoy-worker --query 'services[*].{name:serviceName,status:status,running:runningCount,desired:desiredCount}' --output table"
 echo ""
 echo "View logs:"
 echo "  aws logs tail /ecs/temporal --follow"
 echo "  aws logs tail /ecs/convoy-api --follow"
 echo "  aws logs tail /ecs/convoy-worker --follow"
-echo "  aws logs tail /ecs/convoy-web --follow"

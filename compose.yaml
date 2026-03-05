@@ -1,24 +1,4 @@
 services:
-  convoy-web:
-    container_name: convoy-web
-    image: convoy/web
-    pull_policy: never
-    build:
-      context: ./web
-      dockerfile: Dockerfile
-      target: app_dev
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./web:/app
-      - /app/node_modules   # Anonymous volume to preserve container's node_modules
-      - /app/.next          # Anonymous volume for build cache
-    environment:
-      - NODE_ENV=development
-    networks:
-      - temporal-network
-    restart: unless-stopped
-
   convoy-api:
     container_name: convoy-api
     image: convoy/api
