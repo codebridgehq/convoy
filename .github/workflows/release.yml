@@ -1,0 +1,107 @@
+name: Build and Publish Docker Images
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  API_IMAGE: cnvy/api
+  WORKER_IMAGE: cnvy/worker
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "MAJOR=$(echo $VERSION | cut -d. -f1)" >> $GITHUB_OUTPUT
+          echo "MINOR=$(echo $VERSION | cut -d. -f1).$(echo $VERSION | cut -d. -f2)" >> $GITHUB_OUTPUT
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./core
+          file: ./core/Dockerfile.api
+          target: api_prod
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.API_IMAGE }}:${{ steps.version.outputs.VERSION }}
+            ${{ env.API_IMAGE }}:${{ steps.version.outputs.MAJOR }}
+            ${{ env.API_IMAGE }}:${{ steps.version.outputs.MINOR }}
+            ${{ env.API_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.title=Convoy API
+            org.opencontainers.image.description=Convoy REST API for batch AI/ML inference processing
+            org.opencontainers.image.version=${{ steps.version.outputs.VERSION }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Build and push Worker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./core
+          file: ./core/Dockerfile.worker
+          target: worker_prod
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.WORKER_IMAGE }}:${{ steps.version.outputs.VERSION }}
+            ${{ env.WORKER_IMAGE }}:${{ steps.version.outputs.MAJOR }}
+            ${{ env.WORKER_IMAGE }}:${{ steps.version.outputs.MINOR }}
+            ${{ env.WORKER_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.title=Convoy Worker
+            org.opencontainers.image.description=Convoy Temporal worker for batch scheduling and callbacks
+            org.opencontainers.image.version=${{ steps.version.outputs.VERSION }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          body: |
+            ## Docker Images
+
+            Pull the images:
+            ```bash
+            docker pull cnvy/api:${{ steps.version.outputs.VERSION }}
+            docker pull cnvy/worker:${{ steps.version.outputs.VERSION }}
+            ```
+
+            Or use in docker-compose:
+            ```yaml
+            services:
+              convoy-api:
+                image: cnvy/api:${{ steps.version.outputs.VERSION }}
+              convoy-worker:
+                image: cnvy/worker:${{ steps.version.outputs.VERSION }}
+            ```
