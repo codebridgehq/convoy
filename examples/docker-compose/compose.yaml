@@ -1,0 +1,218 @@
+# Convoy Docker Compose Example
+# This example demonstrates how to run Convoy using pre-built images from Docker Hub.
+#
+# Quick Start:
+#   1. Copy .env.example to .env and configure as needed
+#   2. Run: docker compose up -d
+#   3. Access API at http://localhost:8000
+#   4. Access Temporal UI at http://localhost:8080
+
+services:
+  convoy-api:
+    container_name: convoy-api
+    # Using pre-built image from Docker Hub
+    # We recommend using the same version for both API and Worker
+    image: cnvy/api:${CONVOY_VERSION:-latest}
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://convoy:convoy@convoy-postgresql:5432/convoy
+      - DATABASE_ECHO=false
+      - BATCH_SIZE_THRESHOLD=${BATCH_SIZE_THRESHOLD:-100}
+      - BATCH_TIME_THRESHOLD_SECONDS=${BATCH_TIME_THRESHOLD_SECONDS:-3600}
+      - RESULT_RETENTION_DAYS=${RESULT_RETENTION_DAYS:-30}
+      - CALLBACK_MAX_RETRIES=${CALLBACK_MAX_RETRIES:-5}
+      - TEMPORAL_ADDRESS=${TEMPORAL_ADDRESS:-temporal:7233}
+      - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE:-default}
+      - TEMPORAL_TASK_QUEUE=convoy-tasks
+    depends_on:
+      convoy-postgresql:
+        condition: service_healthy
+      temporal-create-namespace:
+        condition: service_completed_successfully
+    networks:
+      - temporal-network
+    restart: unless-stopped
+
+  convoy-worker:
+    container_name: convoy-worker
+    # Using pre-built image from Docker Hub
+    # We recommend using the same version for both API and Worker
+    image: cnvy/worker:${CONVOY_VERSION:-latest}
+    # AWS credentials mount - required for Bedrock provider
+    # Not required if using Anthropic provider or other non-AWS providers
+    # Alternative configurations:
+    #   - Use IAM roles (ECS/EKS)
+    #   - Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables
+    #   - Use AWS_WEB_IDENTITY_TOKEN_FILE for OIDC
+    volumes:
+      - ${AWS_DIRECTORY_PATH:-~/.aws}:/root/.aws:ro
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://convoy:convoy@convoy-postgresql:5432/convoy
+      - DATABASE_ECHO=false
+      - BATCH_SIZE_THRESHOLD=${BATCH_SIZE_THRESHOLD:-100}
+      - BATCH_TIME_THRESHOLD_SECONDS=${BATCH_TIME_THRESHOLD_SECONDS:-3600}
+      - BATCH_CHECK_INTERVAL_SECONDS=${BATCH_CHECK_INTERVAL_SECONDS:-30}
+      - RESULT_RETENTION_DAYS=${RESULT_RETENTION_DAYS:-30}
+      - CALLBACK_MAX_RETRIES=${CALLBACK_MAX_RETRIES:-5}
+      - CALLBACK_HTTP_TIMEOUT_SECONDS=${CALLBACK_HTTP_TIMEOUT_SECONDS:-30}
+      - TEMPORAL_ADDRESS=${TEMPORAL_ADDRESS:-temporal:7233}
+      - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE:-default}
+      - TEMPORAL_TASK_QUEUE=${TEMPORAL_TASK_QUEUE:-convoy-tasks}
+      # AWS Configuration - required for Bedrock provider
+      # Not required if using Anthropic provider or other non-AWS providers
+      - AWS_PROFILE=${AWS_PROFILE:-}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - BEDROCK_S3_BUCKET=${BEDROCK_S3_BUCKET:-}
+      - BEDROCK_ROLE_ARN=${BEDROCK_ROLE_ARN:-}
+      - BEDROCK_S3_INPUT_PREFIX=${BEDROCK_S3_INPUT_PREFIX:-batch-inputs}
+      - BEDROCK_S3_OUTPUT_PREFIX=${BEDROCK_S3_OUTPUT_PREFIX:-batch-outputs}
+    depends_on:
+      convoy-postgresql:
+        condition: service_healthy
+      temporal-create-namespace:
+        condition: service_completed_successfully
+    networks:
+      - temporal-network
+    restart: unless-stopped
+
+  convoy-postgresql:
+    container_name: convoy-postgresql
+    image: postgres:${POSTGRESQL_VERSION:-17}
+    environment:
+      POSTGRES_PASSWORD: convoy
+      POSTGRES_USER: convoy
+      POSTGRES_DB: convoy
+    networks:
+      - temporal-network
+    ports:
+      - 5433:5432
+    volumes:
+      - convoy-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U convoy -d convoy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  temporal-postgresql:
+    container_name: temporal-postgresql
+    image: postgres:${POSTGRESQL_VERSION:-17}
+    environment:
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_USER: temporal
+    networks:
+      - temporal-network
+    ports:
+      - 5432:5432
+    volumes:
+      - temporal-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temporal"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Temporal schema setup - runs before temporal server to initialize database
+  temporal-schema-setup:
+    container_name: temporal-schema-setup
+    image: temporalio/admin-tools:${TEMPORAL_ADMINTOOLS_VERSION:-1.29.4}
+    restart: on-failure:6
+    depends_on:
+      temporal-postgresql:
+        condition: service_healthy
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=temporal-postgresql
+      - SQL_PASSWORD=temporal
+    networks:
+      - temporal-network
+    volumes:
+      - ./scripts:/scripts
+    entrypoint: ["/bin/sh"]
+    command: /scripts/setup-postgres.sh
+
+  temporal:
+    container_name: temporal
+    image: temporalio/server:${TEMPORAL_VERSION:-1.29.2}
+    depends_on:
+      temporal-schema-setup:
+        condition: service_completed_successfully
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=temporal-postgresql
+      - BIND_ON_IP=0.0.0.0
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+    networks:
+      - temporal-network
+    ports:
+      - 7233:7233
+    volumes:
+      - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "7233"]
+      interval: 5s
+      timeout: 3s
+      start_period: 30s
+      retries: 60
+
+  # Creates the default namespace after temporal server is healthy
+  temporal-create-namespace:
+    container_name: temporal-create-namespace
+    image: temporalio/admin-tools:${TEMPORAL_ADMINTOOLS_VERSION:-1.29.4}
+    restart: on-failure:5
+    depends_on:
+      temporal:
+        condition: service_healthy
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - DEFAULT_NAMESPACE=default
+    networks:
+      - temporal-network
+    volumes:
+      - ./scripts:/scripts
+    entrypoint: ["/bin/sh"]
+    command: /scripts/create-namespace.sh
+
+  # Interactive admin tools for debugging/management
+  temporal-admin-tools:
+    container_name: temporal-admin-tools
+    image: temporalio/admin-tools:${TEMPORAL_ADMINTOOLS_VERSION:-1.29.4}
+    depends_on:
+      temporal:
+        condition: service_healthy
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CLI_ADDRESS=temporal:7233
+    networks:
+      - temporal-network
+    stdin_open: true
+    tty: true
+
+  temporal-ui:
+    container_name: temporal-ui
+    image: temporalio/ui:${TEMPORAL_UI_VERSION:-2.44.1}
+    depends_on:
+      - temporal
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+    networks:
+      - temporal-network
+    ports:
+      - 8080:8080
+
+networks:
+  temporal-network:
+    driver: bridge
+    name: temporal-network
+
+volumes:
+  convoy-postgres-data:
+  temporal-postgres-data:
