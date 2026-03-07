@@ -1,0 +1,40 @@
+{
+  "extends": ["@commitlint/config-conventional"],
+  "rules": {
+    "type-enum": [
+      2,
+      "always",
+      [
+        "feat",
+        "fix",
+        "docs",
+        "style",
+        "refactor",
+        "perf",
+        "test",
+        "build",
+        "ci",
+        "chore",
+        "revert"
+      ]
+    ],
+    "scope-enum": [
+      1,
+      "always",
+      [
+        "api",
+        "worker",
+        "db",
+        "batch",
+        "callback",
+        "temporal",
+        "docker",
+        "ci",
+        "deps"
+      ]
+    ],
+    "subject-case": [2, "always", "lower-case"],
+    "subject-empty": [2, "never"],
+    "type-empty": [2, "never"]
+  }
+}

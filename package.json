@@ -1,0 +1,23 @@
+{
+  "name": "convoy",
+  "version": "0.0.0-semantically-released",
+  "private": true,
+  "description": "Batch processing platform for AI/ML inference with Anthropic and AWS Bedrock",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codebridgehq/convoy.git"
+  },
+  "scripts": {
+    "prepare": "husky || true",
+    "commitlint": "commitlint --edit"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "conventional-changelog-conventionalcommits": "^7.0.0",
+    "husky": "^9.0.0",
+    "semantic-release": "^23.0.0",
+    "@semantic-release/changelog": "^6.0.0",
+    "@semantic-release/git": "^10.0.0"
+  }
+}

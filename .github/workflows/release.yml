@@ -1,24 +1,71 @@
-name: Build and Publish Docker Images
+name: Release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - master
+      - main
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
 
 env:
   API_IMAGE: cnvy/api
   WORKER_IMAGE: cnvy/worker
 
 jobs:
-  build-and-push:
+  release:
+    name: Semantic Release
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
+    outputs:
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_release_version: ${{ steps.semantic.outputs.new_release_version }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Semantic Release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          semantic_version: 23
+          extra_plugins: |
+            @semantic-release/changelog@6
+            @semantic-release/git@10
+            conventional-changelog-conventionalcommits@7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release Info
+        if: steps.semantic.outputs.new_release_published == 'true'
+        run: |
+          echo "New release published: ${{ steps.semantic.outputs.new_release_version }}"
+
+  build-and-push:
+    name: Build and Push Docker Images
+    needs: release
+    if: needs.release.outputs.new_release_published == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.release.outputs.new_release_version }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -32,10 +79,10 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract version from tag
+      - name: Extract version components
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          VERSION=${{ needs.release.outputs.new_release_version }}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "MAJOR=$(echo $VERSION | cut -d. -f1)" >> $GITHUB_OUTPUT
           echo "MINOR=$(echo $VERSION | cut -d. -f1).$(echo $VERSION | cut -d. -f2)" >> $GITHUB_OUTPUT
@@ -84,24 +131,16 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
 
-      - name: Create GitHub Release
+      - name: Update GitHub Release with Docker info
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          tag_name: v${{ needs.release.outputs.new_release_version }}
+          append_body: true
           body: |
-            ## Docker Images
+            
+            ## 🐳 Docker Images
 
-            Pull the images:
             ```bash
             docker pull cnvy/api:${{ steps.version.outputs.VERSION }}
             docker pull cnvy/worker:${{ steps.version.outputs.VERSION }}
-            ```
-
-            Or use in docker-compose:
-            ```yaml
-            services:
-              convoy-api:
-                image: cnvy/api:${{ steps.version.outputs.VERSION }}
-              convoy-worker:
-                image: cnvy/worker:${{ steps.version.outputs.VERSION }}
             ```

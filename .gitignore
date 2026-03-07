@@ -26,3 +26,8 @@ ENV/
 
 # IDE files
 .idea/
+.vscode/
+
+# Node.js
+node_modules/
+package-lock.json
