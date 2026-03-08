@@ -1,3 +1,18 @@
+## [0.2.0](https://github.com/codebridgehq/convoy/compare/v0.1.1...v0.2.0) (2026-03-08)
+
+
+### ✨ Features
+
+* add project-level authentication with api keys ([b26955d](https://github.com/codebridgehq/convoy/commit/b26955d447a73f616ffc425e4dff4c8647af6942))
+
+
+### 📚 Documentation
+
+* add pr and issue templates ([0f97c77](https://github.com/codebridgehq/convoy/commit/0f97c773c41fbd93027d92140024cfd3ca9d4405))
+* fix repository url in quick start clone command ([b6a2f7e](https://github.com/codebridgehq/convoy/commit/b6a2f7e4c059a2ab067d93b7d78930d98d50c0da))
+* reorganize documentation for open-source release ([0859f35](https://github.com/codebridgehq/convoy/commit/0859f3576b15ad65ffe4467805394167b8fce2f9))
+* update documentation for projects, authentication, and docker hub images ([c335fd6](https://github.com/codebridgehq/convoy/commit/c335fd6ce8322fe4c931338cf5d559bb5b14a813))
+
 ## [0.1.1](https://github.com/codebridgehq/convoy/compare/v0.1.0...v0.1.1) (2026-03-08)
 
 
