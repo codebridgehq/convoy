@@ -144,7 +144,7 @@ services:
     networks:
       - temporal-network
     volumes:
-      - ./scripts:/scripts
+      - ./examples/docker-compose/scripts:/scripts
     entrypoint: ["/bin/sh"]
     command: /scripts/setup-postgres.sh
 
@@ -167,7 +167,7 @@ services:
     ports:
       - 7233:7233
     volumes:
-      - ./dynamicconfig:/etc/temporal/config/dynamicconfig
+      - ./examples/docker-compose/dynamicconfig:/etc/temporal/config/dynamicconfig
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "7233"]
       interval: 5s
@@ -189,7 +189,7 @@ services:
     networks:
       - temporal-network
     volumes:
-      - ./scripts:/scripts
+      - ./examples/docker-compose/scripts:/scripts
     entrypoint: ["/bin/sh"]
     command: /scripts/create-namespace.sh
 
