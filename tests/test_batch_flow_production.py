@@ -7,11 +7,18 @@ This test module verifies the full batch processing pipeline against production:
 
 Note: This test does not verify callback delivery since the callback URL
 is a production endpoint without introspection capabilities.
+
+Prerequisites:
+- API_BASE_URL environment variable set (or uses default)
+- ADMIN_API_KEY environment variable set for creating test project/API key
+- AWS credentials configured for Bedrock access
 """
 
 import asyncio
 import logging
+import os
 import time
+import uuid
 from dataclasses import dataclass
 
 import httpx
@@ -21,8 +28,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Production configuration
-API_BASE_URL = "http://convoy-alb-dev-601855782.us-east-1.elb.amazonaws.com"
-CALLBACK_URL = "https://oxfykx7mm6.execute-api.us-east-1.amazonaws.com/callback"
+API_BASE_URL = os.environ.get(
+    "API_BASE_URL",
+    "http://convoy-alb-dev-601855782.us-east-1.elb.amazonaws.com"
+)
+CALLBACK_URL = os.environ.get(
+    "CALLBACK_URL",
+    "https://oxfykx7mm6.execute-api.us-east-1.amazonaws.com/callback"
+)
+ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY", "test-admin-key")
 
 # Test configuration
 BATCH_SIZE = 100  # Number of requests to send (matches BATCH_SIZE_THRESHOLD)
@@ -46,6 +60,63 @@ class BatchTestResult:
     final_statuses: dict[str, int]
 
 
+async def create_test_project_and_api_key(
+    base_url: str,
+    admin_api_key: str,
+) -> str:
+    """Create a test project and API key for production testing.
+    
+    Args:
+        base_url: API base URL.
+        admin_api_key: Admin API key for management endpoints.
+        
+    Returns:
+        The raw API key for the test project.
+    """
+    async with httpx.AsyncClient(
+        base_url=base_url,
+        timeout=30.0,
+        headers={"X-Admin-API-Key": admin_api_key},
+    ) as client:
+        # Create a unique test project
+        project_slug = f"prod-test-{uuid.uuid4().hex[:8]}"
+        
+        project_response = await client.post(
+            "/management/projects",
+            json={
+                "name": "Production E2E Test Project",
+                "slug": project_slug,
+                "description": "Project created for production E2E testing",
+            },
+        )
+        
+        if project_response.status_code != 201:
+            raise RuntimeError(
+                f"Failed to create test project: {project_response.status_code} - "
+                f"{project_response.text}"
+            )
+        
+        project = project_response.json()
+        logger.info(f"Created test project: {project['slug']} (ID: {project['id']})")
+        
+        # Create API key for the project (use slug, not id)
+        key_response = await client.post(
+            f"/admin/projects/{project['slug']}/api-keys",
+            json={"name": "Production E2E Test API Key"},
+        )
+        
+        if key_response.status_code != 201:
+            raise RuntimeError(
+                f"Failed to create API key: {key_response.status_code} - "
+                f"{key_response.text}"
+            )
+        
+        api_key = key_response.json()["key"]
+        logger.info(f"Created API key for project: {project['slug']}")
+        
+        return api_key
+
+
 async def submit_cargo_requests(
     client: httpx.AsyncClient,
     num_requests: int,
@@ -54,7 +125,7 @@ async def submit_cargo_requests(
     """Submit cargo requests concurrently.
 
     Args:
-        client: HTTP client for API calls.
+        client: HTTP client for API calls (must be authenticated).
         num_requests: Number of requests to submit.
         callback_url: URL for callbacks.
 
@@ -128,7 +199,7 @@ async def wait_for_batch_processing(
     or timeout is reached.
 
     Args:
-        client: HTTP client for API calls.
+        client: HTTP client for API calls (must be authenticated).
         cargo_ids: List of cargo IDs to monitor.
         timeout_seconds: Maximum time to wait.
 
@@ -189,7 +260,7 @@ async def verify_cargo_statuses(
     """Verify final status of all cargo requests.
 
     Args:
-        client: HTTP client for API calls.
+        client: HTTP client for API calls (must be authenticated).
         cargo_ids: List of cargo IDs to check.
 
     Returns:
@@ -221,15 +292,24 @@ async def run_production_batch_test() -> BatchTestResult:
     """
     start_time = time.time()
     
+    # First, create a test project and API key
+    logger.info("Creating test project and API key...")
+    api_key = await create_test_project_and_api_key(API_BASE_URL, ADMIN_API_KEY)
+    
     async with httpx.AsyncClient(
         base_url=API_BASE_URL,
         timeout=60.0,
+        headers={"X-API-Key": api_key},
     ) as client:
-        # Step 1: Verify API health
+        # Step 1: Verify API health (health endpoint is public)
         logger.info("Checking API health...")
-        health_response = await client.get("/health")
-        if health_response.status_code != 200:
-            raise RuntimeError(f"API health check failed: {health_response.text}")
+        async with httpx.AsyncClient(
+            base_url=API_BASE_URL,
+            timeout=10.0,
+        ) as health_client:
+            health_response = await health_client.get("/health")
+            if health_response.status_code != 200:
+                raise RuntimeError(f"API health check failed: {health_response.text}")
         logger.info("API is healthy")
 
         # Step 2: Submit cargo requests
@@ -309,9 +389,10 @@ class TestProductionBatchFlow:
         """Test the complete batch flow with 100 requests against production.
 
         This test:
-        1. Submits 100 cargo requests to trigger batch creation
-        2. Waits for batch processing to complete
-        3. Verifies cargo tracking shows correct final status
+        1. Creates a test project and API key
+        2. Submits 100 cargo requests to trigger batch creation
+        3. Waits for batch processing to complete
+        4. Verifies cargo tracking shows correct final status
         """
         result = await run_production_batch_test()
 

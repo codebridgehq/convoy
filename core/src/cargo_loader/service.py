@@ -57,6 +57,7 @@ class CargoLoaderService:
                 params=input.params,
                 callback_url=input.callback_url,
                 status=CargoStatus.PENDING,
+                project_id=input.project_id,  # Associate cargo with project
             )
 
             self.session.add(cargo_request)

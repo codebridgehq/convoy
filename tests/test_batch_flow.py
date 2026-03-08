@@ -11,12 +11,14 @@ Prerequisites:
 - Temporal worker running
 - Mock callback server running
 - AWS credentials configured for Bedrock access
+- ADMIN_API_KEY environment variable set
 """
 
 import asyncio
 import logging
 import os
 import time
+import uuid
 from dataclasses import dataclass
 from typing import Any
 
@@ -96,7 +98,7 @@ class TestBatchFlow:
         """Submit cargo requests concurrently.
 
         Args:
-            client: HTTP client for API calls.
+            client: HTTP client for API calls (must be authenticated).
             prompts: List of prompt payloads.
             callback_url: URL for callbacks.
 
@@ -157,7 +159,7 @@ class TestBatchFlow:
         or timeout is reached.
 
         Args:
-            client: HTTP client for API calls.
+            client: HTTP client for API calls (must be authenticated).
             cargo_ids: List of cargo IDs to monitor.
             timeout_seconds: Maximum time to wait.
 
@@ -267,7 +269,7 @@ class TestBatchFlow:
         """Verify final status of all cargo requests.
 
         Args:
-            client: HTTP client for API calls.
+            client: HTTP client for API calls (must be authenticated).
             cargo_ids: List of cargo IDs to check.
 
         Returns:
@@ -293,7 +295,7 @@ class TestBatchFlow:
     @pytest.mark.asyncio
     async def test_batch_flow_100_requests(
         self,
-        async_client: httpx.AsyncClient,
+        authenticated_client: httpx.AsyncClient,
         callback_server_url: str,
         test_prompts: list[dict],
     ):
@@ -326,7 +328,7 @@ class TestBatchFlow:
             submission_start = time.time()
 
             cargo_ids, success_count, failure_count = await self._submit_cargo_requests(
-                async_client,
+                authenticated_client,
                 test_prompts,
                 callback_server_url,
             )
@@ -348,7 +350,7 @@ class TestBatchFlow:
             batch_start = time.time()
 
             batch_completed = await self._wait_for_batch_processing(
-                async_client,
+                authenticated_client,
                 cargo_ids,
             )
 
@@ -373,7 +375,9 @@ class TestBatchFlow:
 
             # Step 5: Verify final cargo statuses
             logger.info("Verifying final cargo statuses...")
-            final_statuses = await self._verify_cargo_statuses(async_client, cargo_ids)
+            final_statuses = await self._verify_cargo_statuses(
+                authenticated_client, cargo_ids
+            )
             logger.info(f"Final status distribution: {final_statuses}")
 
             # Calculate totals
@@ -412,7 +416,7 @@ class TestBatchFlow:
     @pytest.mark.asyncio
     async def test_batch_flow_verify_callback_content(
         self,
-        async_client: httpx.AsyncClient,
+        authenticated_client: httpx.AsyncClient,
         callback_server_url: str,
     ):
         """Test that callback content is correct.
@@ -442,7 +446,7 @@ class TestBatchFlow:
                 "callback_url": f"{callback_server_url}/callback",
             }
 
-            response = await async_client.post("/cargo/load", json=payload)
+            response = await authenticated_client.post("/cargo/load", json=payload)
             assert response.status_code == 200
             cargo_id = response.json()["cargo_id"]
 
@@ -463,7 +467,7 @@ class TestBatchFlowSmoke:
     @pytest.mark.asyncio
     async def test_cargo_submission_works(
         self,
-        async_client: httpx.AsyncClient,
+        authenticated_client: httpx.AsyncClient,
     ):
         """Verify that cargo submission works correctly."""
         payload = {
@@ -480,7 +484,7 @@ class TestBatchFlowSmoke:
             "callback_url": "https://example.com/callback",
         }
 
-        response = await async_client.post("/cargo/load", json=payload)
+        response = await authenticated_client.post("/cargo/load", json=payload)
 
         assert response.status_code == 200
         data = response.json()
@@ -489,7 +493,7 @@ class TestBatchFlowSmoke:
 
         # Verify tracking shows pending status
         cargo_id = data["cargo_id"]
-        tracking_response = await async_client.get(f"/cargo/{cargo_id}/tracking")
+        tracking_response = await authenticated_client.get(f"/cargo/{cargo_id}/tracking")
 
         assert tracking_response.status_code == 200
         tracking_data = tracking_response.json()

@@ -3,6 +3,7 @@
 import enum
 import uuid
 from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
@@ -19,6 +20,144 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
+
+if TYPE_CHECKING:
+    pass
+
+
+class Project(Base):
+    """Represents a project/tenant in the system."""
+
+    __tablename__ = "projects"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
+    slug: Mapped[str] = mapped_column(
+        String(63),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+    description: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+    )
+    settings: Mapped[dict | None] = mapped_column(
+        JSONB,
+        nullable=True,
+        comment="Project-specific settings (rate limits, allowed models, etc.)",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationships
+    api_keys: Mapped[list["APIKey"]] = relationship(
+        "APIKey",
+        back_populates="project",
+        lazy="selectin",
+    )
+    cargo_requests: Mapped[list["CargoRequest"]] = relationship(
+        "CargoRequest",
+        back_populates="project",
+        lazy="selectin",
+    )
+
+    __table_args__ = (
+        Index("idx_projects_slug", "slug"),
+        Index("idx_projects_is_active", "is_active"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<Project(slug={self.slug}, name={self.name})>"
+
+
+class APIKey(Base):
+    """Stores hashed API keys for project authentication."""
+
+    __tablename__ = "api_keys"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        comment="Human-readable name for the key (e.g., 'Production', 'Development')",
+    )
+    key_prefix: Mapped[str] = mapped_column(
+        String(12),
+        nullable=False,
+        comment="First 12 chars of key for identification (e.g., 'convoy_sk_7k')",
+    )
+    key_hash: Mapped[str] = mapped_column(
+        String(64),
+        unique=True,
+        nullable=False,
+        index=True,
+        comment="SHA-256 hash of the full API key",
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+    )
+    last_used_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Optional expiration date for the key",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    # Relationships
+    project: Mapped["Project"] = relationship(
+        "Project",
+        back_populates="api_keys",
+    )
+
+    __table_args__ = (
+        Index("idx_api_keys_project_id", "project_id"),
+        Index("idx_api_keys_key_hash", "key_hash"),
+        Index("idx_api_keys_active", "is_active", postgresql_where="is_active = true"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<APIKey(id={self.id}, name={self.name}, prefix={self.key_prefix})>"
 
 
 class ProviderType(str, enum.Enum):
@@ -192,6 +331,13 @@ class CargoRequest(Base):
         ForeignKey("batch_jobs.id"),
         nullable=True,
     )
+    # Project association - required for all cargo requests
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("projects.id"),
+        nullable=False,
+        index=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -207,6 +353,10 @@ class CargoRequest(Base):
     # Relationships
     batch_job: Mapped[BatchJob | None] = relationship(
         "BatchJob",
+        back_populates="cargo_requests",
+    )
+    project: Mapped["Project"] = relationship(
+        "Project",
         back_populates="cargo_requests",
     )
     result: Mapped["CargoResult | None"] = relationship(
@@ -227,6 +377,8 @@ class CargoRequest(Base):
         Index("idx_cargo_requests_provider_status", "provider", "status"),
         Index("idx_cargo_requests_batch_job_id", "batch_job_id"),
         Index("idx_cargo_requests_created_at", "created_at"),
+        Index("idx_cargo_requests_project_id", "project_id"),
+        Index("idx_cargo_requests_project_status", "project_id", "status"),
     )
 
     def __repr__(self) -> str:

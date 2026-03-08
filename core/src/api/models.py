@@ -59,3 +59,89 @@ class CargoTrackingResponse(BaseModel):
     status_description: str = Field(..., description="Human-readable description of the current status")
     created_at: datetime = Field(..., description="Timestamp when cargo was created")
     updated_at: datetime = Field(..., description="Timestamp when cargo was last updated")
+
+
+# ============ Project Management Models ============
+
+class ProjectCreate(BaseModel):
+    """Request model for creating a new project."""
+    name: str = Field(..., min_length=1, max_length=255, description="Project name")
+    slug: str = Field(
+        ...,
+        min_length=1,
+        max_length=63,
+        pattern=r"^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$",
+        description="URL-friendly identifier (lowercase, alphanumeric, hyphens, must start/end with alphanumeric)",
+    )
+    description: Optional[str] = Field(None, max_length=1000, description="Project description")
+
+
+class ProjectUpdate(BaseModel):
+    """Request model for updating a project."""
+    name: Optional[str] = Field(None, min_length=1, max_length=255, description="Project name")
+    description: Optional[str] = Field(None, max_length=1000, description="Project description")
+    is_active: Optional[bool] = Field(None, description="Whether the project is active")
+
+
+class ProjectResponse(BaseModel):
+    """Response model for project details."""
+    id: str = Field(..., description="Project UUID")
+    name: str = Field(..., description="Project name")
+    slug: str = Field(..., description="URL-friendly identifier")
+    description: Optional[str] = Field(None, description="Project description")
+    is_active: bool = Field(..., description="Whether the project is active")
+    created_at: datetime = Field(..., description="Timestamp when project was created")
+    updated_at: datetime = Field(..., description="Timestamp when project was last updated")
+
+
+class ProjectListResponse(BaseModel):
+    """Response model for listing projects."""
+    projects: list[ProjectResponse] = Field(..., description="List of projects")
+    total: int = Field(..., description="Total number of projects")
+
+
+# ============ API Key Management Models ============
+
+class APIKeyCreate(BaseModel):
+    """Request model for creating a new API key."""
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+        description="Human-readable name for the key (e.g., 'Production', 'Development')",
+    )
+    expires_at: Optional[datetime] = Field(
+        None,
+        description="Optional expiration date for the key",
+    )
+
+
+class APIKeyResponse(BaseModel):
+    """Response model for API key details (without the actual key)."""
+    id: str = Field(..., description="API key UUID")
+    name: str = Field(..., description="Human-readable name for the key")
+    key_prefix: str = Field(..., description="First 12 characters for identification")
+    is_active: bool = Field(..., description="Whether the key is active")
+    last_used_at: Optional[datetime] = Field(None, description="Timestamp when key was last used")
+    expires_at: Optional[datetime] = Field(None, description="Expiration date for the key")
+    created_at: datetime = Field(..., description="Timestamp when key was created")
+
+
+class APIKeyCreatedResponse(BaseModel):
+    """Response model when a new API key is created (includes full key).
+    
+    ⚠️ IMPORTANT: The full API key is only returned once at creation time.
+    Save it securely - it cannot be retrieved again!
+    """
+    id: str = Field(..., description="API key UUID")
+    name: str = Field(..., description="Human-readable name for the key")
+    key: str = Field(..., description="Full API key - SAVE THIS, it won't be shown again!")
+    key_prefix: str = Field(..., description="First 12 characters for identification")
+    expires_at: Optional[datetime] = Field(None, description="Expiration date for the key")
+    created_at: datetime = Field(..., description="Timestamp when key was created")
+
+
+class APIKeyListResponse(BaseModel):
+    """Response model for listing API keys."""
+    api_keys: list[APIKeyResponse] = Field(..., description="List of API keys")
+    total: int = Field(..., description="Total number of API keys")

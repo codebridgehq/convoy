@@ -1,6 +1,7 @@
 """Cargo tracker service for retrieving cargo status and tracking information."""
 
 import logging
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,21 +29,33 @@ class CargoTrackerService:
         """
         self.session = session
 
-    async def get_tracking(self, cargo_id: str) -> CargoTrackingInfo:
+    async def get_tracking(
+        self,
+        cargo_id: str,
+        project_id: UUID | None = None,
+    ) -> CargoTrackingInfo:
         """Get tracking information for a cargo.
 
         Args:
             cargo_id: The unique cargo identifier.
+            project_id: Optional project ID to scope the query. If provided,
+                        only returns cargo belonging to that project.
 
         Returns:
             CargoTrackingInfo with status and timestamps.
 
         Raises:
-            CargoNotFoundError: If the cargo does not exist.
+            CargoNotFoundError: If the cargo does not exist or doesn't belong
+                               to the specified project.
         """
         logger.info(f"Getting tracking info for cargo: {cargo_id}")
 
         stmt = select(CargoRequest).where(CargoRequest.cargo_id == cargo_id)
+        
+        # If project_id is provided, scope the query to that project
+        if project_id is not None:
+            stmt = stmt.where(CargoRequest.project_id == project_id)
+        
         result = await self.session.execute(stmt)
         cargo = result.scalar_one_or_none()
 

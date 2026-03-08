@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from typing import Any
+from uuid import UUID
 
 
 @dataclass
@@ -14,6 +15,7 @@ class CargoLoadInput:
     model: str
     params: dict[str, Any]
     callback_url: str
+    project_id: UUID  # Required - all cargo must belong to a project
 
 
 @dataclass

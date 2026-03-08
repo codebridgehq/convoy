@@ -2,6 +2,7 @@
 
 from .base import Base, get_async_engine, get_async_session, init_db
 from .models import (
+    APIKey,
     BatchJob,
     BatchStatus,
     CallbackDelivery,
@@ -9,6 +10,7 @@ from .models import (
     CargoRequest,
     CargoResult,
     CargoStatus,
+    Project,
     ProviderType,
 )
 
@@ -24,6 +26,8 @@ __all__ = [
     "BatchStatus",
     "CallbackStatus",
     # Models
+    "Project",
+    "APIKey",
     "CargoRequest",
     "BatchJob",
     "CargoResult",

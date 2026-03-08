@@ -35,6 +35,7 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://convoy:convoy@convoy-postgresql:5432/convoy
       - DATABASE_ECHO=false
+      - ADMIN_API_KEY=${ADMIN_API_KEY:-convoy_admin_dev_key_change_in_production}
       - BATCH_SIZE_THRESHOLD=${BATCH_SIZE_THRESHOLD:-100}
       - BATCH_TIME_THRESHOLD_SECONDS=${BATCH_TIME_THRESHOLD_SECONDS:-3600}
       - RESULT_RETENTION_DAYS=${RESULT_RETENTION_DAYS:-30}
