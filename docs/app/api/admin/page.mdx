@@ -1,0 +1,362 @@
+# Admin API
+
+Management endpoints for projects and API keys. All endpoints require the `X-Admin-Key` header.
+
+import { Callout } from 'nextra/components'
+
+```bash
+# All admin requests require this header
+-H "X-Admin-Key: your-admin-key"
+```
+
+<Callout type="info">
+  Set `ADMIN_API_KEY` in your environment. See [Configuration](/getting-started/configuration).
+</Callout>
+
+---
+
+## Projects
+
+### Create Project
+
+Create a new project for multi-tenant isolation.
+
+```
+POST /admin/projects
+```
+
+**Request Body**
+
+```json
+{
+  "name": "My Project",
+  "slug": "my-project",
+  "description": "Optional description"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Display name (max 255 chars) |
+| `slug` | string | Yes | Unique identifier (max 63 chars, lowercase, hyphens) |
+| `description` | string | No | Project description |
+
+**Response** `201 Created`
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "My Project",
+  "slug": "my-project",
+  "description": "Optional description",
+  "is_active": true,
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:30:00Z"
+}
+```
+
+**Errors**
+
+| Status | Description |
+|--------|-------------|
+| `409` | Project with this slug already exists |
+
+**Example**
+
+```bash
+curl -X POST http://localhost:8000/admin/projects \
+  -H "Content-Type: application/json" \
+  -H "X-Admin-Key: your-admin-key" \
+  -d '{
+    "name": "Production App",
+    "slug": "production-app",
+    "description": "Main production workloads"
+  }'
+```
+
+---
+
+### List Projects
+
+List all projects with pagination.
+
+```
+GET /admin/projects
+```
+
+**Query Parameters**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `skip` | integer | 0 | Number of records to skip |
+| `limit` | integer | 100 | Maximum records to return |
+
+**Response** `200 OK`
+
+```json
+{
+  "projects": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Production App",
+      "slug": "production-app",
+      "description": "Main production workloads",
+      "is_active": true,
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:00Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+**Example**
+
+```bash
+curl -H "X-Admin-Key: your-admin-key" \
+  "http://localhost:8000/admin/projects?skip=0&limit=10"
+```
+
+---
+
+### Get Project
+
+Get a project by its slug.
+
+```
+GET /admin/projects/{slug}
+```
+
+**Path Parameters**
+
+| Parameter | Description |
+|-----------|-------------|
+| `slug` | Project slug |
+
+**Response** `200 OK`
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Production App",
+  "slug": "production-app",
+  "description": "Main production workloads",
+  "is_active": true,
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:30:00Z"
+}
+```
+
+**Errors**
+
+| Status | Description |
+|--------|-------------|
+| `404` | Project not found |
+
+**Example**
+
+```bash
+curl -H "X-Admin-Key: your-admin-key" \
+  http://localhost:8000/admin/projects/production-app
+```
+
+---
+
+### Update Project
+
+Update a project's details.
+
+```
+PATCH /admin/projects/{slug}
+```
+
+**Path Parameters**
+
+| Parameter | Description |
+|-----------|-------------|
+| `slug` | Project slug |
+
+**Request Body**
+
+All fields are optional. Only provided fields are updated.
+
+```json
+{
+  "name": "Updated Name",
+  "description": "Updated description",
+  "is_active": false
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | New display name |
+| `description` | string | New description |
+| `is_active` | boolean | Activate or deactivate project |
+
+<Callout type="warning">
+  Setting `is_active` to `false` will cause all API keys for this project to return `403 Forbidden`.
+</Callout>
+
+**Response** `200 OK`
+
+Returns the updated project object.
+
+**Example**
+
+```bash
+curl -X PATCH http://localhost:8000/admin/projects/production-app \
+  -H "Content-Type: application/json" \
+  -H "X-Admin-Key: your-admin-key" \
+  -d '{"is_active": false}'
+```
+
+---
+
+## API Keys
+
+### Create API Key
+
+Create a new API key for a project.
+
+```
+POST /admin/projects/{slug}/api-keys
+```
+
+<Callout type="error">
+  **Important**: The full API key is only returned once at creation. Save it immediately — it cannot be retrieved again!
+</Callout>
+
+**Path Parameters**
+
+| Parameter | Description |
+|-----------|-------------|
+| `slug` | Project slug |
+
+**Request Body**
+
+```json
+{
+  "name": "Production Key",
+  "expires_at": "2025-01-15T00:00:00Z"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Human-readable name for the key |
+| `expires_at` | datetime | No | Optional expiration date (ISO 8601) |
+
+**Response** `201 Created`
+
+```json
+{
+  "id": "660e8400-e29b-41d4-a716-446655440000",
+  "name": "Production Key",
+  "key": "convoy_sk_7kX9mP2nQ4rT6vW8yB0cD3fG5hJ8kL1mN",
+  "key_prefix": "convoy_sk_7k",
+  "expires_at": "2025-01-15T00:00:00Z",
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
+
+**Example**
+
+```bash
+curl -X POST http://localhost:8000/admin/projects/production-app/api-keys \
+  -H "Content-Type: application/json" \
+  -H "X-Admin-Key: your-admin-key" \
+  -d '{
+    "name": "Production Key",
+    "expires_at": "2025-12-31T23:59:59Z"
+  }'
+```
+
+---
+
+### List API Keys
+
+List all API keys for a project. Does not include the actual key values.
+
+```
+GET /admin/projects/{slug}/api-keys
+```
+
+**Path Parameters**
+
+| Parameter | Description |
+|-----------|-------------|
+| `slug` | Project slug |
+
+**Response** `200 OK`
+
+```json
+{
+  "api_keys": [
+    {
+      "id": "660e8400-e29b-41d4-a716-446655440000",
+      "name": "Production Key",
+      "key_prefix": "convoy_sk_7k",
+      "is_active": true,
+      "last_used_at": "2024-01-15T14:22:00Z",
+      "expires_at": "2025-01-15T00:00:00Z",
+      "created_at": "2024-01-15T10:30:00Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+**Example**
+
+```bash
+curl -H "X-Admin-Key: your-admin-key" \
+  http://localhost:8000/admin/projects/production-app/api-keys
+```
+
+---
+
+### Revoke API Key
+
+Revoke (deactivate) an API key. The key remains in the database but can no longer be used.
+
+```
+DELETE /admin/projects/{slug}/api-keys/{key_id}
+```
+
+**Path Parameters**
+
+| Parameter | Description |
+|-----------|-------------|
+| `slug` | Project slug |
+| `key_id` | API key UUID |
+
+**Response** `204 No Content`
+
+No response body.
+
+**Errors**
+
+| Status | Description |
+|--------|-------------|
+| `404` | API key not found |
+
+**Example**
+
+```bash
+curl -X DELETE \
+  -H "X-Admin-Key: your-admin-key" \
+  http://localhost:8000/admin/projects/production-app/api-keys/660e8400-e29b-41d4-a716-446655440000
+```
+
+---
+
+## Common Errors
+
+All admin endpoints may return these errors:
+
+| Status | Detail | Description |
+|--------|--------|-------------|
+| `401` | "Admin API key required. Include X-Admin-Key header." | Missing header |
+| `401` | "Invalid admin API key." | Wrong key value |
+| `500` | "Admin authentication not configured..." | `ADMIN_API_KEY` not set |

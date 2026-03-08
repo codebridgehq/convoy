@@ -5,5 +5,8 @@ export default {
   },
   'track-cargo': {
     title: 'Track Cargo'
+  },
+  admin: {
+    title: 'Admin API'
   }
 }

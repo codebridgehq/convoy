@@ -1,32 +1,74 @@
 # Getting Started
 
+Get Convoy running locally using pre-built Docker images from Docker Hub.
+
+import { Callout } from 'nextra/components'
+
+## Docker Images
+
+Convoy provides pre-built Docker images on Docker Hub:
+
+- [**cnvy/api**](https://hub.docker.com/r/cnvy/api) — API server
+- [**cnvy/worker**](https://hub.docker.com/r/cnvy/worker) — Background worker
+
+<Callout type="info">
+  **Hosted API Coming Soon** — A fully managed hosted version of Convoy is in development. 
+  For now, self-hosting via Docker Compose is the recommended approach.
+</Callout>
+
 ## Prerequisites
 
-- Docker and Docker Compose
-- AWS credentials (for Bedrock provider)
-- Anthropic API key (for Anthropic provider)
+- [Docker](https://docs.docker.com/get-docker/) (v20.10+)
+- [Docker Compose](https://docs.docker.com/compose/install/) (v2.0+)
+- AWS credentials (for Bedrock provider) OR Anthropic API key
 
-## Installation
+## Quick Start
 
-1. Clone the repository:
+For detailed setup instructions, see the [Docker Compose Example README](https://github.com/codebridgehq/convoy/tree/main/examples/docker-compose).
+
+### 1. Clone and Navigate
+
 ```bash
-git clone https://github.com/your-org/convoy.git
-cd convoy
+git clone https://github.com/codebridgehq/convoy.git
+cd convoy/examples/docker-compose
 ```
 
-2. Copy the environment file:
+### 2. Configure Environment
+
 ```bash
 cp .env.example .env
 ```
 
-3. Configure your provider credentials in `.env` (see [Configuration](/getting-started/configuration))
+Edit `.env` to set your admin key and provider credentials:
 
-4. Start the services:
+```bash
+# Required: Admin key for management operations
+ADMIN_API_KEY=your-secure-admin-key-here
+
+# For Bedrock provider
+AWS_REGION=us-east-1
+BEDROCK_S3_BUCKET=your-bucket
+BEDROCK_ROLE_ARN=arn:aws:iam::123456789:role/BedrockBatchRole
+
+# For Anthropic provider (set in request, not env)
+```
+
+See [Configuration](/getting-started/configuration) for all options.
+
+### 3. Start Services
+
 ```bash
 docker compose up -d
 ```
 
-5. Verify it's running:
+Wait for all services to be healthy:
+
+```bash
+docker compose ps
+```
+
+### 4. Verify Installation
+
 ```bash
 curl http://localhost:8000/health
 ```
@@ -36,11 +78,56 @@ Response:
 {"status": "ok"}
 ```
 
+## Set Up Authentication
+
+Convoy uses a two-tier authentication system. Before making API calls, you need to create a project and API key.
+
+### Create a Project
+
+```bash
+curl -X POST http://localhost:8000/admin/projects \
+  -H "Content-Type: application/json" \
+  -H "X-Admin-Key: your-secure-admin-key-here" \
+  -d '{
+    "name": "My First Project",
+    "slug": "my-project"
+  }'
+```
+
+### Create an API Key
+
+```bash
+curl -X POST http://localhost:8000/admin/projects/my-project/api-keys \
+  -H "Content-Type: application/json" \
+  -H "X-Admin-Key: your-secure-admin-key-here" \
+  -d '{
+    "name": "Production Key"
+  }'
+```
+
+<Callout type="warning">
+  **Save your API key!** The full key is only shown once at creation. Store it securely.
+</Callout>
+
+Response:
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Production Key",
+  "key": "convoy_sk_abc123def456...",
+  "key_prefix": "convoy_sk_ab",
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
+
 ## Submit Your First Request
+
+Use your API key to submit a batch processing request:
 
 ```bash
 curl -X POST http://localhost:8000/cargo/load \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: convoy_sk_abc123def456..." \
   -d '{
     "params": {
       "model": "claude-sonnet-4-5",
@@ -51,10 +138,20 @@ curl -X POST http://localhost:8000/cargo/load \
   }'
 ```
 
+Response:
+```json
+{
+  "cargo_id": "crg_abc123def456",
+  "status": "success",
+  "message": "Cargo loaded successfully"
+}
+```
+
 ## Track Your Request
 
 ```bash
-curl http://localhost:8000/cargo/{cargo_id}/tracking
+curl -H "X-API-Key: convoy_sk_abc123def456..." \
+  http://localhost:8000/cargo/crg_abc123def456/tracking
 ```
 
 ## Access Points
@@ -71,8 +168,26 @@ curl http://localhost:8000/cargo/{cargo_id}/tracking
 docker compose down
 ```
 
-## Run Tests
+To remove all data and start fresh:
 
 ```bash
-docker compose --profile tests run --rm convoy-tests
+docker compose down -v
 ```
+
+## Version Pinning
+
+For production deployments, we recommend pinning to a specific version:
+
+```bash
+# In .env
+CONVOY_VERSION=1.0.0
+```
+
+This ensures both `cnvy/api` and `cnvy/worker` use the same version.
+
+## Next Steps
+
+- [Configuration](/getting-started/configuration) — All environment variables
+- [Authentication](/concepts/authentication) — Understanding projects and API keys
+- [API Reference](/api) — Complete endpoint documentation
+- [Providers](/providers) — Configure Bedrock or Anthropic

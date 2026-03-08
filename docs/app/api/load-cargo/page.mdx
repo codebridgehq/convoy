@@ -6,6 +6,18 @@ Submit a request for batch processing.
 POST /cargo/load
 ```
 
+import { Callout } from 'nextra/components'
+
+## Authentication
+
+This endpoint requires the `X-API-Key` header with a valid project API key.
+
+```bash
+-H "X-API-Key: convoy_sk_your_key_here"
+```
+
+See [Authentication](/concepts/authentication) for details on obtaining API keys.
+
 ## Request Body
 
 ```json
@@ -82,6 +94,7 @@ Or with content blocks:
 ```bash
 curl -X POST http://localhost:8000/cargo/load \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: convoy_sk_your_key_here" \
   -d '{
     "params": {
       "model": "claude-sonnet-4-5",
@@ -99,6 +112,9 @@ import httpx
 
 response = httpx.post(
     "http://localhost:8000/cargo/load",
+    headers={
+        "X-API-Key": "convoy_sk_your_key_here"
+    },
     json={
         "params": {
             "model": "claude-sonnet-4-5",
@@ -119,7 +135,10 @@ print(f"Submitted: {cargo_id}")
 ```javascript
 const response = await fetch("http://localhost:8000/cargo/load", {
   method: "POST",
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    "Content-Type": "application/json",
+    "X-API-Key": "convoy_sk_your_key_here"
+  },
   body: JSON.stringify({
     params: {
       model: "claude-sonnet-4-5",
@@ -131,6 +150,7 @@ const response = await fetch("http://localhost:8000/cargo/load", {
 });
 
 const { cargo_id } = await response.json();
+console.log(`Submitted: ${cargo_id}`);
 ```
 
 ## Errors
@@ -138,4 +158,20 @@ const { cargo_id } = await response.json();
 | Status | Description |
 |--------|-------------|
 | `400` | Invalid request body |
+| `401` | Missing or invalid API key |
+| `403` | Project is inactive |
 | `500` | Internal server error |
+
+### Error Response Examples
+
+```json
+{"detail": "API key required. Include X-API-Key header."}
+```
+
+```json
+{"detail": "Invalid API key."}
+```
+
+```json
+{"detail": "Project is inactive."}
+```

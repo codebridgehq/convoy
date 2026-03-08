@@ -2,25 +2,86 @@
 
 Base URL: `http://localhost:8000`
 
-## Endpoints
+Interactive API documentation (Swagger UI) is available at: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+import { Callout } from 'nextra/components'
+
+## Authentication
+
+Convoy uses API key authentication. Include your key in the request header:
+
+```bash
+curl -H "X-API-Key: convoy_sk_your_key_here" http://localhost:8000/cargo/...
+```
+
+See [Authentication](/concepts/authentication) for details on obtaining API keys.
+
+## Cargo Operations
+
+These endpoints require the `X-API-Key` header with a valid project API key.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/cargo/load` | Submit a request for batch processing |
-| `GET` | `/cargo/{cargo_id}/tracking` | Get status of a request |
+| `POST` | [`/cargo/load`](/api/load-cargo) | Submit a request for batch processing |
+| `GET` | [`/cargo/{cargo_id}/tracking`](/api/track-cargo) | Get status of a request |
+
+## Management Operations
+
+These endpoints require the `X-Admin-Key` header with your admin API key.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | [`/admin/projects`](/api/admin#create-project) | Create a new project |
+| `GET` | [`/admin/projects`](/api/admin#list-projects) | List all projects |
+| `GET` | [`/admin/projects/{slug}`](/api/admin#get-project) | Get project by slug |
+| `PATCH` | [`/admin/projects/{slug}`](/api/admin#update-project) | Update a project |
+| `POST` | [`/admin/projects/{slug}/api-keys`](/api/admin#create-api-key) | Create an API key |
+| `GET` | [`/admin/projects/{slug}/api-keys`](/api/admin#list-api-keys) | List project's API keys |
+| `DELETE` | [`/admin/projects/{slug}/api-keys/{id}`](/api/admin#revoke-api-key) | Revoke an API key |
+
+## Health Check
+
+No authentication required.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
 | `GET` | `/health` | Health check |
 
 ## Response Format
 
 All responses are JSON. Successful responses return `2xx` status codes.
 
-Error responses:
+### Success Response
+
 ```json
 {
-  "detail": "Error message"
+  "cargo_id": "crg_abc123def456",
+  "status": "success",
+  "message": "Cargo loaded successfully"
 }
 ```
 
-## Interactive Docs
+### Error Response
 
-Swagger UI available at: http://localhost:8000/docs
+```json
+{
+  "detail": "Error message describing what went wrong"
+}
+```
+
+## Common Error Codes
+
+| Status | Description |
+|--------|-------------|
+| `400` | Bad Request — Invalid request body or parameters |
+| `401` | Unauthorized — Missing or invalid API key |
+| `403` | Forbidden — Project is inactive |
+| `404` | Not Found — Resource doesn't exist or not owned by project |
+| `409` | Conflict — Resource already exists (e.g., duplicate slug) |
+| `500` | Internal Server Error — Something went wrong on our end |
+
+## Rate Limits
+
+<Callout type="info">
+  Rate limiting is not currently enforced but may be added in future versions.
+</Callout>

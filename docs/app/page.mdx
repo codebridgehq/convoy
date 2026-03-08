@@ -2,15 +2,24 @@
 
 Convoy simplifies batch processing for AI inference. Send individual requests and Convoy automatically groups them into batches.
 
+import { Callout } from 'nextra/components'
+
+<Callout type="info">
+  **Hosted API Coming Soon** — A fully managed hosted version is in development. 
+  For now, [self-host with Docker Compose](/getting-started).
+</Callout>
+
 ## How It Works
 
-1. **Submit requests** via the `/cargo/load` endpoint
-2. **Convoy batches** them automatically (100 requests or 1 hour, whichever comes first)
-3. **Provider processes** the batch (AWS Bedrock or Anthropic)
-4. **Results delivered** to your callback URL
+1. **Set up authentication** - Create a project and API key
+2. **Submit requests** via the `/cargo/load` endpoint with your API key
+3. **Convoy batches** them automatically (100 requests or 1 hour, whichever comes first)
+4. **Provider processes** the batch (AWS Bedrock or Anthropic)
+5. **Results delivered** to your callback URL
 
 ## Key Features
 
+- **Multi-tenant** - Projects with isolated API keys
 - **Automatic batching** - No manual batch management needed
 - **Multiple providers** - AWS Bedrock and Anthropic support
 - **Reliable delivery** - Callbacks with exponential backoff retry
@@ -19,8 +28,10 @@ Convoy simplifies batch processing for AI inference. Send individual requests an
 ## Quick Example
 
 ```bash
+# Submit a request (requires API key)
 curl -X POST http://localhost:8000/cargo/load \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: convoy_sk_your_key_here" \
   -d '{
     "params": {
       "model": "claude-sonnet-4-5",
@@ -43,5 +54,6 @@ Response:
 ## Next Steps
 
 - [Getting Started](/getting-started) - Install and run Convoy
+- [Authentication](/concepts/authentication) - Set up projects and API keys
 - [API Reference](/api) - Full API documentation
 - [Concepts](/concepts) - Understand how Convoy works

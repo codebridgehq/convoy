@@ -11,8 +11,13 @@ export const metadata = {
  
 const navbar = (
   <Navbar
-    projectLink="https://github.com/Sonic-Web-Dev/convoy"
-    logo={<b>🚂 Convoy</b>}
+    projectLink="https://github.com/codebridgehq/convoy"
+    logo={
+      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <img src="/logo.svg" alt="Convoy" style={{ height: '24px', width: 'auto' }} />
+        <b>Convoy</b>
+      </span>
+    }
   />
 )
 const footer = <Footer>MIT {new Date().getFullYear()} © Convoy</Footer>
@@ -44,7 +49,7 @@ export default async function RootLayout({ children }) {
         <Layout
           navbar={navbar}
           pageMap={await getPageMap()}
-          docsRepositoryBase="https://github.com/Sonic-Web-Dev/convoy/tree/master/docs"
+          docsRepositoryBase="https://github.com/codebridgehq/convoy/tree/main/docs"
           footer={footer}
           // ... Your additional layout options
         >

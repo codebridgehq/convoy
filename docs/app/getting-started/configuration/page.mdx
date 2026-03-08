@@ -2,6 +2,23 @@
 
 All configuration is done via environment variables. Copy `.env.example` to `.env` and modify as needed.
 
+import { Callout } from 'nextra/components'
+
+## Authentication
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ADMIN_API_KEY` | Yes | Secret key for admin management operations |
+
+<Callout type="warning">
+  **Security**: Use a strong, random value for `ADMIN_API_KEY`. This key grants full access to create projects and API keys.
+</Callout>
+
+Generate a secure key:
+```bash
+openssl rand -hex 32
+```
+
 ## Batch Processing
 
 | Variable | Default | Description |
@@ -48,36 +65,72 @@ DATABASE_URL=postgresql+asyncpg://convoy:convoy@localhost:5433/convoy
 
 ## AWS Bedrock
 
+Required for the Bedrock provider. Not needed if using Anthropic only.
+
 | Variable | Description |
 |----------|-------------|
 | `AWS_REGION` | AWS region (e.g., `us-east-1`) |
 | `AWS_PROFILE` | AWS credentials profile |
+| `AWS_DIRECTORY_PATH` | Path to AWS credentials (default: `~/.aws`) |
 | `BEDROCK_S3_BUCKET` | S3 bucket for batch I/O |
 | `BEDROCK_ROLE_ARN` | IAM role for Bedrock batch |
-| `BEDROCK_S3_INPUT_PREFIX` | S3 prefix for inputs |
-| `BEDROCK_S3_OUTPUT_PREFIX` | S3 prefix for outputs |
+| `BEDROCK_S3_INPUT_PREFIX` | S3 prefix for inputs (default: `batch-inputs`) |
+| `BEDROCK_S3_OUTPUT_PREFIX` | S3 prefix for outputs (default: `batch-outputs`) |
 
 ## Anthropic
 
-| Variable | Description |
-|----------|-------------|
-| `ANTHROPIC_API_KEY` | Your Anthropic API key |
+The Anthropic API key is passed in the request body, not as an environment variable.
+
+## Docker Image Versions
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CONVOY_VERSION` | `latest` | Version tag for `cnvy/api` and `cnvy/worker` |
+
+<Callout type="info">
+  For production, pin to a specific version (e.g., `CONVOY_VERSION=1.0.0`) to ensure consistency.
+</Callout>
 
 ## Example .env
 
 ```bash
+# Authentication (required)
+ADMIN_API_KEY=your-secure-admin-key-here
+
 # Database
-DATABASE_URL=postgresql+asyncpg://convoy:convoy@localhost:5433/convoy
+DATABASE_URL=postgresql+asyncpg://convoy:convoy@convoy-postgresql:5432/convoy
 
 # Batch settings
 BATCH_SIZE_THRESHOLD=100
 BATCH_TIME_THRESHOLD_SECONDS=3600
 
-# AWS Bedrock
+# AWS Bedrock (if using Bedrock provider)
 AWS_REGION=us-east-1
+AWS_PROFILE=default
 BEDROCK_S3_BUCKET=my-convoy-bucket
 BEDROCK_ROLE_ARN=arn:aws:iam::123456789:role/BedrockBatchRole
 
-# Anthropic (optional)
-ANTHROPIC_API_KEY=sk-ant-...
+# Version pinning (recommended for production)
+CONVOY_VERSION=1.0.0
+```
+
+## Environment-Specific Configs
+
+### Development
+
+```bash
+ADMIN_API_KEY=dev-admin-key
+DATABASE_ECHO=true
+BATCH_SIZE_THRESHOLD=10
+BATCH_TIME_THRESHOLD_SECONDS=60
+```
+
+### Production
+
+```bash
+ADMIN_API_KEY=$(openssl rand -hex 32)
+DATABASE_ECHO=false
+BATCH_SIZE_THRESHOLD=100
+BATCH_TIME_THRESHOLD_SECONDS=3600
+CONVOY_VERSION=1.0.0
 ```

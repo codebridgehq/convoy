@@ -1,5 +1,8 @@
 export default {
   index: 'Overview',
+  authentication: {
+    title: 'Authentication'
+  },
   architecture: {
     title: 'Architecture'
   },

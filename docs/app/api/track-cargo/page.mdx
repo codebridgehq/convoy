@@ -6,6 +6,20 @@ Get the current status of a submitted request.
 GET /cargo/{cargo_id}/tracking
 ```
 
+import { Callout } from 'nextra/components'
+
+## Authentication
+
+This endpoint requires the `X-API-Key` header with a valid project API key.
+
+```bash
+-H "X-API-Key: convoy_sk_your_key_here"
+```
+
+<Callout type="info">
+  **Project Scoping**: You can only track cargo that belongs to your project. Attempting to track cargo from another project returns `404 Not Found`.
+</Callout>
+
 ## Path Parameters
 
 | Parameter | Type | Description |
@@ -52,7 +66,8 @@ See [Cargo Lifecycle](/concepts/cargo-lifecycle) for the full state diagram.
 ### curl
 
 ```bash
-curl http://localhost:8000/cargo/crg_abc123def456/tracking
+curl -H "X-API-Key: convoy_sk_your_key_here" \
+  http://localhost:8000/cargo/crg_abc123def456/tracking
 ```
 
 ### Python
@@ -61,7 +76,10 @@ curl http://localhost:8000/cargo/crg_abc123def456/tracking
 import httpx
 
 cargo_id = "crg_abc123def456"
-response = httpx.get(f"http://localhost:8000/cargo/{cargo_id}/tracking")
+response = httpx.get(
+    f"http://localhost:8000/cargo/{cargo_id}/tracking",
+    headers={"X-API-Key": "convoy_sk_your_key_here"}
+)
 
 data = response.json()
 print(f"Status: {data['status']}")
@@ -74,14 +92,15 @@ print(f"Description: {data['status_description']}")
 import httpx
 import time
 
-def wait_for_completion(cargo_id: str, timeout: int = 3600) -> dict:
+def wait_for_completion(cargo_id: str, api_key: str, timeout: int = 3600) -> dict:
     """Poll until cargo is processed or timeout."""
     start = time.time()
     terminal_statuses = {"callback_delivered", "callback_failed", "failed"}
     
     while time.time() - start < timeout:
         response = httpx.get(
-            f"http://localhost:8000/cargo/{cargo_id}/tracking"
+            f"http://localhost:8000/cargo/{cargo_id}/tracking",
+            headers={"X-API-Key": api_key}
         )
         data = response.json()
         
@@ -91,11 +110,54 @@ def wait_for_completion(cargo_id: str, timeout: int = 3600) -> dict:
         time.sleep(30)  # Poll every 30 seconds
     
     raise TimeoutError(f"Cargo {cargo_id} not completed in {timeout}s")
+
+# Usage
+result = wait_for_completion(
+    "crg_abc123def456",
+    "convoy_sk_your_key_here"
+)
+```
+
+### JavaScript
+
+```javascript
+async function trackCargo(cargoId, apiKey) {
+  const response = await fetch(
+    `http://localhost:8000/cargo/${cargoId}/tracking`,
+    {
+      headers: { "X-API-Key": apiKey }
+    }
+  );
+  return response.json();
+}
+
+// Usage
+const status = await trackCargo(
+  "crg_abc123def456",
+  "convoy_sk_your_key_here"
+);
+console.log(`Status: ${status.status}`);
 ```
 
 ## Errors
 
 | Status | Description |
 |--------|-------------|
-| `404` | Cargo not found |
+| `401` | Missing or invalid API key |
+| `403` | Project is inactive |
+| `404` | Cargo not found or not owned by your project |
 | `500` | Internal server error |
+
+### Error Response Examples
+
+```json
+{"detail": "API key required. Include X-API-Key header."}
+```
+
+```json
+{"detail": "Cargo not found"}
+```
+
+<Callout type="warning">
+  A `404` response may mean the cargo doesn't exist OR it belongs to a different project. This prevents information leakage about other projects' cargo.
+</Callout>
