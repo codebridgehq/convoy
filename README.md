@@ -1,239 +1,90 @@
-# 🚂 Convoy
+<p align="center">
+  <img src="logo.svg" alt="Convoy" width="200">
+</p>
 
-Convoy simplifies batch processing. Send individual requests to Convoy and it automatically groups them into batches—by default, every hour or every 100 requests, whichever comes first. Both the time interval and request limit are configurable to fit your needs.
+<h1 align="center">Convoy</h1>
 
-## Architecture Overview
+<p align="center">
+  Batch processing for AI inference
+</p>
 
-Convoy is a distributed batch processing system built with a microservices architecture. It uses Temporal for workflow orchestration, PostgreSQL for persistence, and supports multiple AI providers (AWS Bedrock, Anthropic) for batch inference.
+<p align="center">
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://github.com/cnvy-ai/convoy/actions/workflows/release.yml"><img src="https://github.com/cnvy-ai/convoy/actions/workflows/release.yml/badge.svg" alt="Build Status"></a>
+  <a href="https://docs.cnvy.ai"><img src="https://img.shields.io/badge/docs-docs.cnvy.ai-blue" alt="Documentation"></a>
+  <a href="https://github.com/cnvy-ai/convoy/releases"><img src="https://img.shields.io/github/v/release/cnvy-ai/convoy" alt="GitHub release"></a>
+</p>
 
-### System Architecture
+---
 
-```mermaid
-graph TB
-    subgraph DockerNetwork["temporal-network"]
-        subgraph ConvoyServices["Convoy Services"]
-            API["🚂 convoy-api<br/>(FastAPI)<br/>:8000"]
-            Worker["⚙️ convoy-worker<br/>(Temporal Worker)"]
-        end
+Convoy simplifies batch processing for AI inference. Send individual requests (cargo) and Convoy automatically groups them into batches (convoys) of 100 requests for processing.
 
-        subgraph ConvoyDB["Convoy Database"]
-            PG["🗄️ convoy-postgresql<br/>:5433"]
-        end
+## Features
 
-        subgraph TemporalStack["Temporal Stack"]
-            Temporal["⚡ temporal<br/>(Temporal Server)<br/>:7233"]
-            TemporalUI["🖥️ temporal-ui<br/>:8080"]
-            TemporalPG["🗄️ temporal-postgresql<br/>:5432"]
-            TemporalAdmin["🔧 temporal-admin-tools"]
-        end
-    end
+- **Automatic batching** - No manual batch management needed
+- **Multiple providers** - AWS Bedrock and Anthropic support
+- **Reliable delivery** - Callbacks with exponential backoff retry
+- **Status tracking** - Monitor requests through their lifecycle
+- **Configurable thresholds** - Customize batch size and timing
 
-    subgraph External["External Services"]
-        Bedrock["☁️ AWS Bedrock"]
-        S3["📦 AWS S3"]
-        Webhook["📤 Client Webhook"]
-    end
+## Quick Start
 
-    Client["👤 Client"] -->|"HTTP :8000"| API
-    API -->|"SQL :5433"| PG
-    Worker -->|"SQL :5433"| PG
-    Worker -->|"gRPC :7233"| Temporal
-    Temporal -->|"SQL :5432"| TemporalPG
-    TemporalUI -->|"gRPC :7233"| Temporal
-    TemporalAdmin -->|"gRPC :7233"| Temporal
-    Worker -->|"HTTPS"| Bedrock
-    Worker -->|"HTTPS"| S3
-    Worker -->|"HTTP POST"| Webhook
-```
-
-### Data Flow Sequence
-
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant API as Convoy API
-    participant DB as PostgreSQL
-    participant BSW as BatchSchedulerWorkflow
-    participant P as Provider (Bedrock/Anthropic)
-    participant CDW as CallbackDeliveryWorkflow
-    participant WH as Client Webhook
-
-    C->>API: POST /cargo/load
-    API->>DB: Insert CargoRequest (PENDING)
-    API-->>C: cargo_id
-
-    loop Every 30s
-        BSW->>DB: Check pending requests
-        alt Threshold met (100 requests OR 1 hour)
-            BSW->>DB: Create BatchJob
-            BSW->>DB: Update CargoRequests (BATCHED)
-            BSW->>P: Submit batch
-            loop Until complete
-                BSW->>P: Poll status
-            end
-            P-->>BSW: Results
-            BSW->>DB: Store CargoResults (COMPLETED)
-            BSW->>CDW: Start callback delivery
-        end
-    end
-
-    CDW->>DB: Get callback payload
-    loop Retry with backoff (1m, 5m, 15m, 1h)
-        CDW->>WH: POST result
-        alt Success
-            CDW->>DB: Update status (CALLBACK_DELIVERED)
-        else Failure
-            CDW->>DB: Update retry count
-        end
-    end
-```
-
-### Cargo Status Lifecycle
-
-```mermaid
-stateDiagram-v2
-    [*] --> PENDING: Request submitted
-    PENDING --> BATCHED: Added to batch
-    BATCHED --> PROCESSING: Batch submitted to provider
-    PROCESSING --> COMPLETED: Results received
-    PROCESSING --> FAILED: Provider error
-    COMPLETED --> CALLBACK_PENDING: Ready for delivery
-    CALLBACK_PENDING --> CALLBACK_DELIVERED: Webhook success
-    CALLBACK_PENDING --> CALLBACK_FAILED: Max retries exceeded
-    FAILED --> [*]
-    CALLBACK_DELIVERED --> [*]
-    CALLBACK_FAILED --> [*]
-```
-
-### Database Schema
-
-```mermaid
-erDiagram
-    cargo_requests ||--o| batch_jobs : "belongs to"
-    cargo_requests ||--o| cargo_results : "has"
-    cargo_requests ||--o| callback_deliveries : "has"
-
-    cargo_requests {
-        uuid id PK
-        string cargo_id UK
-        enum provider
-        string model
-        jsonb params
-        string callback_url
-        enum status
-        uuid batch_job_id FK
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    batch_jobs {
-        uuid id PK
-        enum provider
-        string provider_job_id
-        enum status
-        int request_count
-        jsonb metadata
-        text error_message
-        timestamp created_at
-        timestamp submitted_at
-        timestamp completed_at
-    }
-
-    cargo_results {
-        uuid id PK
-        uuid cargo_request_id FK
-        boolean success
-        jsonb response
-        text error_message
-        timestamp created_at
-        timestamp expires_at
-    }
-
-    callback_deliveries {
-        uuid id PK
-        uuid cargo_request_id FK
-        enum status
-        int attempt_count
-        timestamp last_attempt_at
-        timestamp next_retry_at
-        int http_status_code
-        text error_message
-        timestamp created_at
-        timestamp completed_at
-    }
-```
-
-### Core Components
-
-#### 1. **Convoy API** (FastAPI)
-The REST API layer that handles incoming requests:
-- **`POST /cargo/load`** - Submit prompts for batch processing
-- **`GET /cargo/{id}/tracking`** - Track the status of submitted cargo
-- **`GET /health`** - Health check endpoint
-
-#### 2. **Services Layer**
-- **CargoLoaderService** - Persists incoming requests to the database with status `PENDING`
-- **CargoTrackerService** - Retrieves cargo status and tracking information
-- **BatchProcessingService** - Manages batch jobs across multiple providers
-
-#### 3. **Temporal Worker**
-Executes workflows and activities for batch processing orchestration:
-
-**Workflows:**
-- **BatchSchedulerWorkflow** - Long-running workflow (one per provider) that:
-  - Monitors pending requests at configurable intervals
-  - Creates batches when thresholds are met (time or count)
-  - Submits batches to providers and polls for completion
-  - Triggers callback delivery for completed results
-
-- **CallbackDeliveryWorkflow** - Delivers results to client webhook endpoints with:
-  - Exponential backoff retry (1min → 5min → 15min → 1hr)
-  - Configurable max retries (default: 5)
-
-- **ResultCleanupWorkflow** - Periodic cleanup of expired results (default: 30 days)
-
-#### 4. **Batch Processor Adapters**
-Provider-specific implementations for batch inference:
-- **BedrockBatchProcessor** - AWS Bedrock batch inference via S3
-- **AnthropicBatchProcessor** - Anthropic Message Batches API
-
-### Configuration
-
-| Environment Variable | Default | Description |
-|---------------------|---------|-------------|
-| `BATCH_SIZE_THRESHOLD` | 100 | Max requests per batch |
-| `BATCH_TIME_THRESHOLD_SECONDS` | 3600 | Max wait time before batching |
-| `BATCH_CHECK_INTERVAL_SECONDS` | 30 | Interval to check for pending requests |
-| `RESULT_RETENTION_DAYS` | 30 | Days to retain results before cleanup |
-| `CALLBACK_MAX_RETRIES` | 5 | Max callback delivery attempts |
-| `CALLBACK_HTTP_TIMEOUT_SECONDS` | 30 | HTTP timeout for callbacks |
-
-## Getting Started
-
-### Start the application
+Get Convoy running in minutes with Docker Compose:
 
 ```bash
+# Clone the repository
+git clone https://github.com/cnvy-ai/convoy.git
+cd convoy/examples/docker-compose
+
+# Configure environment
+cp .env.example .env
+
+# Start services
 docker compose up -d
 ```
 
-### Stop the application
+Submit your first request:
 
 ```bash
-docker compose down
+curl -X POST http://localhost:8000/cargo/load \
+  -H "Content-Type: application/json" \
+  -d '{
+    "params": {
+      "model": "claude-sonnet-4-5",
+      "max_tokens": 1024,
+      "messages": [{"role": "user", "content": "Hello"}]
+    },
+    "callback_url": "https://your-server.com/callback"
+  }'
 ```
 
-### Run tests
+See the [Docker Compose example](examples/docker-compose/README.md) for detailed setup instructions.
 
-```bash
-docker compose --profile tests run -t --rm convoy-tests
-```
+## Documentation
 
-### Run specific test file
+Full documentation is available at **[docs.cnvy.ai](https://docs.cnvy.ai)**
 
-```bash
-docker compose --profile tests run --rm convoy-tests uv run pytest test_batch_flow.py -v -s
-```
+- [Getting Started](https://docs.cnvy.ai/getting-started)
+- [API Reference](https://docs.cnvy.ai/api)
+- [Configuration](https://docs.cnvy.ai/getting-started/configuration)
+- [Provider Setup](https://docs.cnvy.ai/providers)
 
-## API Docs
+## Architecture
 
-Once the application is running, visit the API documentation at: http://localhost:8000/docs
+For technical details about Convoy's architecture, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
+## Examples
+
+| Example | Description |
+|---------|-------------|
+| [Docker Compose](examples/docker-compose) | Run Convoy locally with pre-built images |
+| AWS Fargate | *Coming soon* |
+| Digital Ocean | *Coming soon* |
+
+## Contributing
+
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) before submitting a pull request.
+
+## License
+
+Convoy is [MIT licensed](LICENSE).
