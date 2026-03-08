@@ -8,6 +8,20 @@
 #   4. Access Temporal UI at http://localhost:8080
 
 services:
+  # Database migration service - runs before API and Worker
+  convoy-migrations:
+    container_name: convoy-migrations
+    image: cnvy/api:${CONVOY_VERSION:-latest}
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://convoy:convoy@convoy-postgresql:5432/convoy
+    depends_on:
+      convoy-postgresql:
+        condition: service_healthy
+    networks:
+      - temporal-network
+    entrypoint: ["uv", "run", "alembic", "upgrade", "head"]
+    restart: on-failure:3
+
   convoy-api:
     container_name: convoy-api
     # Using pre-built image from Docker Hub
@@ -26,8 +40,8 @@ services:
       - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE:-default}
       - TEMPORAL_TASK_QUEUE=convoy-tasks
     depends_on:
-      convoy-postgresql:
-        condition: service_healthy
+      convoy-migrations:
+        condition: service_completed_successfully
       temporal-create-namespace:
         condition: service_completed_successfully
     networks:
@@ -68,8 +82,8 @@ services:
       - BEDROCK_S3_INPUT_PREFIX=${BEDROCK_S3_INPUT_PREFIX:-batch-inputs}
       - BEDROCK_S3_OUTPUT_PREFIX=${BEDROCK_S3_OUTPUT_PREFIX:-batch-outputs}
     depends_on:
-      convoy-postgresql:
-        condition: service_healthy
+      convoy-migrations:
+        condition: service_completed_successfully
       temporal-create-namespace:
         condition: service_completed_successfully
     networks:
