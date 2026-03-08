@@ -30,3 +30,6 @@ ENV/
 
 # Node.js
 node_modules/
+
+# Roo
+.roo/
