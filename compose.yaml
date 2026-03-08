@@ -1,3 +1,11 @@
+# =============================================================================
+# LOCAL DEVELOPMENT ONLY
+# =============================================================================
+# This compose file is intended for local development and testing purposes only.
+# For production deployments, please refer to the example compose file at:
+#   examples/docker-compose/compose.yaml
+# =============================================================================
+
 services:
   # Database migration service - runs before API and Worker
   convoy-migrations:
@@ -253,6 +261,8 @@ services:
     build:
       context: ./tests
       dockerfile: Dockerfile
+    volumes:
+      - ./tests:/tests
     environment:
       - API_BASE_URL=${API_BASE_URL:-http://convoy-api:8000}
       - CALLBACK_SERVER_URL=${CALLBACK_SERVER_URL:-http://mock-callback:8001}
