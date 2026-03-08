@@ -43,7 +43,11 @@ export default async function RootLayout({ children }) {
           dark: "rgb(45,27,78)"                   // Dark purple background (#2D1B4E)
         }}
       >
-        {/* Your additional tags should be passed as `children` of `<Head>` element */}
+        <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/site.webmanifest" />
       </Head>
       <body>
         <Layout
