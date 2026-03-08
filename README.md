@@ -10,9 +10,9 @@
 
 <p align="center">
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-  <a href="https://github.com/cnvy-ai/convoy/actions/workflows/release.yml"><img src="https://github.com/cnvy-ai/convoy/actions/workflows/release.yml/badge.svg" alt="Build Status"></a>
+  <a href="https://github.com/codebridgehq/convoy/actions/workflows/release.yml"><img src="https://github.com/codebridgehq/convoy/actions/workflows/release.yml/badge.svg" alt="Build Status"></a>
   <a href="https://docs.cnvy.ai"><img src="https://img.shields.io/badge/docs-docs.cnvy.ai-blue" alt="Documentation"></a>
-  <a href="https://github.com/cnvy-ai/convoy/releases"><img src="https://img.shields.io/github/v/release/cnvy-ai/convoy" alt="GitHub release"></a>
+  <a href="https://github.com/codebridgehq/convoy/releases"><img src="https://img.shields.io/github/v/release/codebridgehq/convoy" alt="GitHub release"></a>
 </p>
 
 ---
@@ -33,7 +33,7 @@ Get Convoy running in minutes with Docker Compose:
 
 ```bash
 # Clone the repository
-git clone https://github.com/cnvy-ai/convoy.git
+git clone https://github.com/codebridgehq/convoy.git
 cd convoy/examples/docker-compose
 
 # Configure environment
