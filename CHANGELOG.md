@@ -1,3 +1,15 @@
+## [1.0.0](https://github.com/codebridgehq/convoy/compare/v0.2.0...v1.0.0) (2026-03-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* Existing BatchSchedulerWorkflow instances must be
+terminated before deploying this change to avoid nondeterminism errors.
+
+### ✨ Features
+
+* implement simultaneous batch processing with child workflows ([36f467d](https://github.com/codebridgehq/convoy/commit/36f467d8a2b06da8037fa357fc1020520074b8ed))
+
 ## [0.2.0](https://github.com/codebridgehq/convoy/compare/v0.1.1...v0.2.0) (2026-03-08)
 
 
