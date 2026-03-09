@@ -1,3 +1,16 @@
+## [1.0.1](https://github.com/codebridgehq/convoy/compare/v1.0.0...v1.0.1) (2026-03-09)
+
+
+### 🐛 Bug Fixes
+
+* add 405 to non-retryable http status codes in callback delivery ([6236f64](https://github.com/codebridgehq/convoy/commit/6236f6434c48c50be7f61abc6b2ef59d55cf8861))
+* use system ssl certificates for https callback delivery ([a72c43d](https://github.com/codebridgehq/convoy/commit/a72c43d496a4038d6a69467b38573aa1480dd812))
+
+
+### 📚 Documentation
+
+* add explainer video link to readme ([33397e1](https://github.com/codebridgehq/convoy/commit/33397e1f38e12d1afbb746cc7e77073e66e9db08))
+
 ## [1.0.0](https://github.com/codebridgehq/convoy/compare/v0.2.0...v1.0.0) (2026-03-09)
 
 
