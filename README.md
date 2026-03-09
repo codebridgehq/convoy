@@ -18,7 +18,7 @@
 ---
 
 <p align="center">
-  <a href="https://youtu.be/8Zz_ZTkjJvo">
+  <a href="https://youtu.be/8Zz_ZTkjJvo" target="_blank" rel="noopener noreferrer">
     <img src="https://img.shields.io/badge/▶_Watch-Explainer_Video-red?style=for-the-badge" alt="Watch Explainer Video">
   </a>
 </p>
