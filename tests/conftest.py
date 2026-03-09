@@ -8,6 +8,24 @@ import httpx
 import pytest
 
 
+def pytest_collection_modifyitems(session, config, items):
+    """Ensure test_batch_flow.py tests run last.
+    
+    This hook reorders collected test items so that all tests from
+    test_batch_flow.py are executed after all other tests complete.
+    """
+    batch_flow_tests = []
+    other_tests = []
+    
+    for item in items:
+        if "test_batch_flow" in str(item.fspath):
+            batch_flow_tests.append(item)
+        else:
+            other_tests.append(item)
+    
+    items[:] = other_tests + batch_flow_tests
+
+
 @pytest.fixture(scope="session")
 def api_base_url() -> str:
     """Get API base URL from environment variable.
