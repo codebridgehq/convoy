@@ -18,7 +18,7 @@
 ---
 
 <p align="center">
-  <a href="convoy_explainer_video.mp4">
+  <a href="https://youtu.be/8Zz_ZTkjJvo">
     <img src="https://img.shields.io/badge/▶_Watch-Explainer_Video-red?style=for-the-badge" alt="Watch Explainer Video">
   </a>
 </p>
