@@ -30,6 +30,7 @@ from src.worker.activities.callback_activities import (
 from src.worker.client import get_temporal_client
 from src.worker.config import BatchConfig, TemporalConfig
 from src.worker.workflows import (
+    BatchProcessingWorkflow,
     BatchSchedulerInput,
     BatchSchedulerWorkflow,
     CallbackDeliveryWorkflow,
@@ -91,6 +92,7 @@ async def run_worker() -> None:
         client,
         task_queue=config.task_queue,
         workflows=[
+            BatchProcessingWorkflow,
             BatchSchedulerWorkflow,
             CallbackDeliveryWorkflow,
             ResultCleanupWorkflow,

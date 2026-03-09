@@ -10,11 +10,9 @@ with workflow.unsafe.imports_passed_through():
     from src.worker.activities.batch_activities import (
         check_pending_requests,
         create_batch_job,
-        poll_batch_status,
-        process_batch_results,
-        submit_batch_to_provider,
     )
     from src.worker.config import BatchConfig
+    from src.worker.workflows.batch_processing import BatchProcessingInput
 
 
 @dataclass
@@ -38,7 +36,9 @@ class BatchSchedulerWorkflow:
     """Workflow that continuously monitors pending requests and creates batches.
 
     This workflow runs indefinitely for each provider, checking for pending
-    requests and creating batches when thresholds are met.
+    requests and creating batches when thresholds are met. Each batch is
+    processed by a separate BatchProcessingWorkflow, allowing multiple
+    batches to be processed simultaneously.
     """
 
     @workflow.run
@@ -89,66 +89,21 @@ class BatchSchedulerWorkflow:
 
                     workflow.logger.info(f"Created batch job: {batch_job_id}")
 
-                    # Submit to provider
-                    provider_job_id = await workflow.execute_activity(
-                        submit_batch_to_provider,
-                        batch_job_id,
-                        start_to_close_timeout=timedelta(minutes=5),
-                        retry_policy=retry_policy,
+                    # Start child workflow for batch processing (non-blocking)
+                    # This allows the scheduler to continue creating new batches
+                    # while this batch is being processed
+                    await workflow.start_child_workflow(
+                        "BatchProcessingWorkflow",
+                        BatchProcessingInput(
+                            batch_job_id=batch_job_id,
+                            provider=input.provider,
+                        ),
+                        id=f"batch-processing-{batch_job_id}",
                     )
 
                     workflow.logger.info(
-                        f"Submitted batch to provider, job ID: {provider_job_id}"
+                        f"Started batch processing workflow for batch {batch_job_id}"
                     )
-
-                    # Poll until complete
-                    completed = False
-                    status_result = {}
-                    while not completed:
-                        # Wait before polling
-                        await workflow.sleep(timedelta(minutes=1))
-
-                        status_result = await workflow.execute_activity(
-                            poll_batch_status,
-                            args=[batch_job_id, provider_job_id],
-                            start_to_close_timeout=timedelta(seconds=30),
-                            retry_policy=retry_policy,
-                        )
-
-                        completed = status_result["completed"]
-                        workflow.logger.info(
-                            f"Batch {batch_job_id} status: {status_result['status']}"
-                        )
-
-                        if status_result.get("error_message"):
-                            workflow.logger.error(
-                                f"Batch {batch_job_id} error: {status_result['error_message']}"
-                            )
-
-                    # Process results and trigger callbacks
-                    if status_result.get("status") not in ("failed", "cancelled"):
-                        cargo_request_ids = await workflow.execute_activity(
-                            process_batch_results,
-                            batch_job_id,
-                            start_to_close_timeout=timedelta(minutes=10),
-                            retry_policy=retry_policy,
-                        )
-
-                        workflow.logger.info(
-                            f"Processed {len(cargo_request_ids)} results for batch {batch_job_id}"
-                        )
-
-                        # Start child workflows for callback delivery
-                        for cargo_request_id in cargo_request_ids:
-                            await workflow.start_child_workflow(
-                                "CallbackDeliveryWorkflow",
-                                cargo_request_id,
-                                id=f"callback-delivery-{cargo_request_id}",
-                            )
-
-                        workflow.logger.info(
-                            f"Started {len(cargo_request_ids)} callback delivery workflows"
-                        )
 
             except Exception as e:
                 workflow.logger.error(f"Error in batch scheduler for {input.provider}: {e}")
