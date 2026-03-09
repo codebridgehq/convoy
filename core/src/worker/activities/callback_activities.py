@@ -80,7 +80,7 @@ async def deliver_callback(
             logger.warning(error_msg)
             raise ApplicationError(
                 error_msg,
-                non_retryable=response.status_code in (400, 401, 403, 404),
+                non_retryable=response.status_code in (400, 401, 403, 404, 405),
             )
 
     except httpx.TimeoutException as e:
