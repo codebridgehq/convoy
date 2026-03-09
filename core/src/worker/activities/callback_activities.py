@@ -1,6 +1,7 @@
 """Callback delivery activities for Temporal workflows."""
 
 import logging
+import ssl
 from datetime import datetime, timezone
 
 import httpx
@@ -45,7 +46,12 @@ async def deliver_callback(
     logger.info(f"Delivering callback for cargo request {cargo_request_id} to {callback_url}")
 
     try:
-        async with httpx.AsyncClient(timeout=config.http_timeout_seconds) as client:
+        # Use system SSL certificates instead of certifi to ensure broader CA coverage
+        ssl_context = ssl.create_default_context()
+        async with httpx.AsyncClient(
+            timeout=config.http_timeout_seconds,
+            verify=ssl_context,
+        ) as client:
             response = await client.post(
                 callback_url,
                 json=payload,
