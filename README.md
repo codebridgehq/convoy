@@ -84,8 +84,6 @@ For technical details about Convoy's architecture, see [ARCHITECTURE.md](ARCHITE
 | Example | Description |
 |---------|-------------|
 | [Docker Compose](examples/docker-compose) | Run Convoy locally with pre-built images |
-| AWS Fargate | *Coming soon* |
-| Digital Ocean | *Coming soon* |
 
 ## Contributing
 
