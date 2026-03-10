@@ -1,3 +1,17 @@
+## [1.1.0](https://github.com/codebridgehq/convoy/compare/v1.0.1...v1.1.0) (2026-03-10)
+
+
+### ✨ Features
+
+* group bedrock batch requests by model ([2b85da2](https://github.com/codebridgehq/convoy/commit/2b85da20e04e211afad2a2ea435e706830baef8b))
+* implement provider-agnostic model ids ([cf8052b](https://github.com/codebridgehq/convoy/commit/cf8052bc33e306ee78437fda3752bd6f063f5e3d))
+
+
+### 📚 Documentation
+
+* add target blank to youtube video link in readme ([21db4e8](https://github.com/codebridgehq/convoy/commit/21db4e85a68a29704ee08d81ca31482ddd43910f))
+* update readme to link youtube video instead of local file ([bd20cd3](https://github.com/codebridgehq/convoy/commit/bd20cd30fa9cdc63a2b861e13ddd798c8854206f))
+
 ## [1.0.1](https://github.com/codebridgehq/convoy/compare/v1.0.0...v1.0.1) (2026-03-09)
 
 
