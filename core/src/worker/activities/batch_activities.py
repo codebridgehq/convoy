@@ -33,6 +33,8 @@ class PendingRequestsResult:
     should_batch: bool
     pending_count: int
     oldest_age_seconds: int | None
+    # For Bedrock: list of models that have >= threshold pending requests
+    models_ready: list[str] | None = None
 
 
 @dataclass
@@ -91,6 +93,10 @@ def _create_bedrock_adapter() -> BedrockBatchProcessor:
 async def check_pending_requests(provider: str) -> dict:
     """Check if a batch should be created for the given provider.
 
+    For Bedrock, requests are grouped by model since Bedrock requires a single
+    model per batch job. For Anthropic, all requests can be batched together
+    since each request specifies its own model.
+
     Args:
         provider: Provider name (bedrock or anthropic).
 
@@ -99,60 +105,113 @@ async def check_pending_requests(provider: str) -> dict:
         - should_batch: Whether a batch should be created
         - pending_count: Number of pending requests
         - oldest_age_seconds: Age of oldest request in seconds
+        - models_ready: (Bedrock only) List of models with >= threshold requests
     """
     config = BatchConfig()
     provider_type = _get_provider_type(provider)
 
     async for session in get_async_session():
-        # Count pending requests for this provider
-        count_stmt = (
-            select(func.count())
-            .select_from(CargoRequest)
-            .where(
+        if provider_type == ProviderType.BEDROCK:
+            # For Bedrock: Group by model since each batch requires a single model
+            count_stmt = (
+                select(CargoRequest.model, func.count().label("count"))
+                .where(
+                    CargoRequest.provider == provider_type,
+                    CargoRequest.status == CargoStatus.PENDING,
+                )
+                .group_by(CargoRequest.model)
+            )
+            result = await session.execute(count_stmt)
+            model_counts = {row.model: row.count for row in result}
+
+            # Find models that meet the threshold
+            models_ready = [
+                model
+                for model, count in model_counts.items()
+                if count >= config.size_threshold
+            ]
+
+            total_pending = sum(model_counts.values())
+            should_batch = len(models_ready) > 0
+
+            # Get oldest pending request age
+            oldest_stmt = select(func.min(CargoRequest.created_at)).where(
                 CargoRequest.provider == provider_type,
                 CargoRequest.status == CargoStatus.PENDING,
             )
-        )
-        result = await session.execute(count_stmt)
-        pending_count = result.scalar() or 0
+            result = await session.execute(oldest_stmt)
+            oldest_time = result.scalar()
 
-        # Get oldest pending request age
-        oldest_stmt = (
-            select(func.min(CargoRequest.created_at))
-            .where(
+            oldest_age_seconds = None
+            if oldest_time:
+                age = datetime.now(timezone.utc) - oldest_time
+                oldest_age_seconds = int(age.total_seconds())
+
+            if models_ready:
+                logger.info(
+                    f"Bedrock batch threshold met for models: {models_ready} "
+                    f"(threshold: {config.size_threshold})"
+                )
+
+            return {
+                "should_batch": should_batch,
+                "pending_count": total_pending,
+                "oldest_age_seconds": oldest_age_seconds,
+                "models_ready": models_ready,
+            }
+        else:
+            # For Anthropic: No model grouping needed, each request has its own model
+            count_stmt = (
+                select(func.count())
+                .select_from(CargoRequest)
+                .where(
+                    CargoRequest.provider == provider_type,
+                    CargoRequest.status == CargoStatus.PENDING,
+                )
+            )
+            result = await session.execute(count_stmt)
+            pending_count = result.scalar() or 0
+
+            # Get oldest pending request age
+            oldest_stmt = select(func.min(CargoRequest.created_at)).where(
                 CargoRequest.provider == provider_type,
                 CargoRequest.status == CargoStatus.PENDING,
             )
-        )
-        result = await session.execute(oldest_stmt)
-        oldest_time = result.scalar()
+            result = await session.execute(oldest_stmt)
+            oldest_time = result.scalar()
 
-        oldest_age_seconds = None
-        if oldest_time:
-            age = datetime.now(timezone.utc) - oldest_time
-            oldest_age_seconds = int(age.total_seconds())
+            oldest_age_seconds = None
+            if oldest_time:
+                age = datetime.now(timezone.utc) - oldest_time
+                oldest_age_seconds = int(age.total_seconds())
 
-        # Determine if we should create a batch
-        should_batch = False
-        if pending_count >= config.size_threshold:
-            logger.info(
-                f"Batch threshold met for {provider}: {pending_count} >= {config.size_threshold}"
-            )
-            should_batch = True
+            # Determine if we should create a batch
+            should_batch = False
+            if pending_count >= config.size_threshold:
+                logger.info(
+                    f"Batch threshold met for {provider}: {pending_count} >= {config.size_threshold}"
+                )
+                should_batch = True
 
-        return {
-            "should_batch": should_batch,
-            "pending_count": pending_count,
-            "oldest_age_seconds": oldest_age_seconds,
-        }
+            return {
+                "should_batch": should_batch,
+                "pending_count": pending_count,
+                "oldest_age_seconds": oldest_age_seconds,
+                "models_ready": None,
+            }
 
 
 @activity.defn
-async def create_batch_job(provider: str) -> str:
+async def create_batch_job(provider: str, model: str | None = None) -> str:
     """Create a batch job and assign pending requests to it.
+
+    For Bedrock, a model parameter is required to ensure all requests in the
+    batch use the same model. For Anthropic, model is ignored since each
+    request specifies its own model.
 
     Args:
         provider: Provider name (bedrock or anthropic).
+        model: (Bedrock only) Model ID to filter requests by.
 
     Returns:
         The batch job ID as a string.
@@ -169,18 +228,27 @@ async def create_batch_job(provider: str) -> str:
         session.add(batch_job)
         await session.flush()
 
-        logger.info(f"Created batch job {batch_job.id} for provider {provider}")
-
-        # Get pending requests up to the threshold
-        pending_stmt = (
-            select(CargoRequest)
-            .where(
-                CargoRequest.provider == provider_type,
-                CargoRequest.status == CargoStatus.PENDING,
+        if provider_type == ProviderType.BEDROCK and model:
+            logger.info(
+                f"Created Bedrock batch job {batch_job.id} for model: {model}"
             )
-            .order_by(CargoRequest.created_at)
-            .limit(config.size_threshold)
+        else:
+            logger.info(f"Created batch job {batch_job.id} for provider {provider}")
+
+        # Build query for pending requests
+        pending_stmt = select(CargoRequest).where(
+            CargoRequest.provider == provider_type,
+            CargoRequest.status == CargoStatus.PENDING,
         )
+
+        # For Bedrock, filter by model to ensure all requests use the same model
+        if provider_type == ProviderType.BEDROCK and model:
+            pending_stmt = pending_stmt.where(CargoRequest.model == model)
+
+        pending_stmt = (
+            pending_stmt.order_by(CargoRequest.created_at).limit(config.size_threshold)
+        )
+
         result = await session.execute(pending_stmt)
         pending_requests = result.scalars().all()
 

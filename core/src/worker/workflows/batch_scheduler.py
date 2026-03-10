@@ -39,6 +39,9 @@ class BatchSchedulerWorkflow:
     requests and creating batches when thresholds are met. Each batch is
     processed by a separate BatchProcessingWorkflow, allowing multiple
     batches to be processed simultaneously.
+
+    For Bedrock, batches are created per-model since Bedrock requires a single
+    model per batch job. For Anthropic, all requests can be batched together.
     """
 
     @workflow.run
@@ -74,36 +77,69 @@ class BatchSchedulerWorkflow:
                 )
 
                 if pending_result["should_batch"]:
-                    workflow.logger.info(
-                        f"Creating batch for {input.provider}: "
-                        f"{pending_result['pending_count']} pending requests"
-                    )
+                    models_ready = pending_result.get("models_ready")
 
-                    # Create the batch job
-                    batch_job_id = await workflow.execute_activity(
-                        create_batch_job,
-                        input.provider,
-                        start_to_close_timeout=timedelta(seconds=60),
-                        retry_policy=retry_policy,
-                    )
+                    if models_ready:
+                        # Bedrock: Create separate batch for each model that meets threshold
+                        # This ensures all requests in a batch use the same model
+                        workflow.logger.info(
+                            f"Creating Bedrock batches for {len(models_ready)} models: {models_ready}"
+                        )
 
-                    workflow.logger.info(f"Created batch job: {batch_job_id}")
+                        for model in models_ready:
+                            batch_job_id = await workflow.execute_activity(
+                                create_batch_job,
+                                args=[input.provider, model],
+                                start_to_close_timeout=timedelta(seconds=60),
+                                retry_policy=retry_policy,
+                            )
 
-                    # Start child workflow for batch processing (non-blocking)
-                    # This allows the scheduler to continue creating new batches
-                    # while this batch is being processed
-                    await workflow.start_child_workflow(
-                        "BatchProcessingWorkflow",
-                        BatchProcessingInput(
-                            batch_job_id=batch_job_id,
-                            provider=input.provider,
-                        ),
-                        id=f"batch-processing-{batch_job_id}",
-                    )
+                            workflow.logger.info(
+                                f"Created Bedrock batch job {batch_job_id} for model: {model}"
+                            )
 
-                    workflow.logger.info(
-                        f"Started batch processing workflow for batch {batch_job_id}"
-                    )
+                            # Start child workflow for batch processing (non-blocking)
+                            await workflow.start_child_workflow(
+                                "BatchProcessingWorkflow",
+                                BatchProcessingInput(
+                                    batch_job_id=batch_job_id,
+                                    provider=input.provider,
+                                ),
+                                id=f"batch-processing-{batch_job_id}",
+                            )
+
+                            workflow.logger.info(
+                                f"Started batch processing workflow for batch {batch_job_id}"
+                            )
+                    else:
+                        # Anthropic: Single batch for all models (each request has its own model)
+                        workflow.logger.info(
+                            f"Creating batch for {input.provider}: "
+                            f"{pending_result['pending_count']} pending requests"
+                        )
+
+                        batch_job_id = await workflow.execute_activity(
+                            create_batch_job,
+                            args=[input.provider, None],
+                            start_to_close_timeout=timedelta(seconds=60),
+                            retry_policy=retry_policy,
+                        )
+
+                        workflow.logger.info(f"Created batch job: {batch_job_id}")
+
+                        # Start child workflow for batch processing (non-blocking)
+                        await workflow.start_child_workflow(
+                            "BatchProcessingWorkflow",
+                            BatchProcessingInput(
+                                batch_job_id=batch_job_id,
+                                provider=input.provider,
+                            ),
+                            id=f"batch-processing-{batch_job_id}",
+                        )
+
+                        workflow.logger.info(
+                            f"Started batch processing workflow for batch {batch_job_id}"
+                        )
 
             except Exception as e:
                 workflow.logger.error(f"Error in batch scheduler for {input.provider}: {e}")
