@@ -12,7 +12,7 @@ class TestCargoLoadEndpoint:
         """Provide a valid cargo load request payload."""
         return {
             "params": {
-                "model": "claude-sonnet-4-5",
+                "model": "claude-3-haiku",
                 "max_tokens": 1024,
                 "messages": [
                     {
@@ -48,13 +48,13 @@ class TestCargoLoadEndpoint:
         assert data["status"] == "success"
 
     async def test_cargo_load_with_system_prompt(
-        self, 
+        self,
         authenticated_client: httpx.AsyncClient
     ):
         """Test cargo load with system prompt included."""
         payload = {
             "params": {
-                "model": "claude-sonnet-4-5",
+                "model": "claude-3-haiku",
                 "max_tokens": 512,
                 "system": "You are a helpful assistant for testing purposes.",
                 "messages": [
@@ -75,13 +75,13 @@ class TestCargoLoadEndpoint:
         assert "cargo_id" in data
 
     async def test_cargo_load_with_optional_params(
-        self, 
+        self,
         authenticated_client: httpx.AsyncClient
     ):
         """Test cargo load with optional parameters like temperature and top_p."""
         payload = {
             "params": {
-                "model": "claude-3-haiku-20240307",
+                "model": "claude-3-haiku",
                 "max_tokens": 256,
                 "temperature": 0.7,
                 "top_p": 0.9,
@@ -124,13 +124,13 @@ class TestCargoLoadEndpoint:
         assert response.status_code == 422  # Unprocessable Entity
 
     async def test_cargo_load_missing_messages_returns_error(
-        self, 
+        self,
         authenticated_client: httpx.AsyncClient
     ):
         """Test that missing messages field returns validation error."""
         payload = {
             "params": {
-                "model": "claude-sonnet-4-5",
+                "model": "claude-3-haiku",
                 "max_tokens": 1024
             },
             "callback_url": "https://example.com/callback"
@@ -141,13 +141,13 @@ class TestCargoLoadEndpoint:
         assert response.status_code == 422  # Unprocessable Entity
 
     async def test_cargo_load_missing_callback_url_returns_error(
-        self, 
+        self,
         authenticated_client: httpx.AsyncClient
     ):
         """Test that missing callback_url field returns validation error."""
         payload = {
             "params": {
-                "model": "claude-sonnet-4-5",
+                "model": "claude-3-haiku",
                 "max_tokens": 1024,
                 "messages": [
                     {
@@ -191,7 +191,7 @@ class TestCargoLoadAuthentication:
         """Provide a valid cargo load request payload."""
         return {
             "params": {
-                "model": "claude-sonnet-4-5",
+                "model": "claude-3-haiku",
                 "max_tokens": 1024,
                 "messages": [
                     {

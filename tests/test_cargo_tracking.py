@@ -14,7 +14,7 @@ class TestCargoTrackingEndpoint:
         """Create a cargo and return its ID for tracking tests."""
         payload = {
             "params": {
-                "model": "claude-sonnet-4-5",
+                "model": "claude-3-haiku",
                 "max_tokens": 1024,
                 "messages": [
                     {
@@ -168,7 +168,7 @@ class TestCargoTrackingProjectIsolation:
         """Create a cargo in the test project."""
         payload = {
             "params": {
-                "model": "claude-sonnet-4-5",
+                "model": "claude-3-haiku",
                 "max_tokens": 1024,
                 "messages": [
                     {

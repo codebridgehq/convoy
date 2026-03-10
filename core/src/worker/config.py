@@ -41,6 +41,17 @@ class CleanupConfig:
     deletion_batch_size: int = int(os.getenv("CLEANUP_BATCH_SIZE", "1000"))
 
 
+class ProviderConfig:
+    """Provider configuration for batch processing.
+
+    This determines which provider (Bedrock or Anthropic) is used for
+    processing batch requests.
+    """
+
+    # Default provider: "bedrock" or "anthropic"
+    default_provider: str = os.getenv("DEFAULT_PROVIDER", "bedrock")
+
+
 class BedrockConfig:
     """AWS Bedrock batch processing configuration."""
 
@@ -49,3 +60,9 @@ class BedrockConfig:
     role_arn: str = os.getenv("BEDROCK_ROLE_ARN", "")
     s3_input_prefix: str = os.getenv("BEDROCK_S3_INPUT_PREFIX", "batch-inputs")
     s3_output_prefix: str = os.getenv("BEDROCK_S3_OUTPUT_PREFIX", "batch-outputs")
+
+
+class AnthropicConfig:
+    """Anthropic API configuration."""
+
+    api_key: str = os.getenv("ANTHROPIC_API_KEY", "")

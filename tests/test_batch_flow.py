@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 
 # Test configuration
 BATCH_SIZE = 100  # Number of requests to send (matches BATCH_SIZE_THRESHOLD)
-# Use Bedrock's Claude 3 Haiku - cheapest Claude model on Bedrock
-MODEL = "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-haiku-20240307-v1:0"
+# Use Claude 3 Haiku - cheapest Claude model, using provider-agnostic ID
+MODEL = "claude-3-haiku"
 MAX_TOKENS = 50  # Keep responses short to minimize cost
 BATCH_TIMEOUT_SECONDS = 1800  # 30 minutes max for batch processing
 CALLBACK_TIMEOUT_SECONDS = 600  # 10 minutes for all callbacks to arrive

@@ -1,0 +1,115 @@
+# AWS Bedrock Models
+
+All models available through AWS Bedrock batch inference.
+
+import { Callout } from 'nextra/components'
+
+<Callout type="info">
+  Set `DEFAULT_PROVIDER=bedrock` to use AWS Bedrock. Regional availability varies by model.
+</Callout>
+
+## Anthropic Claude Models
+
+Claude models are available on both Bedrock and Anthropic API.
+
+| Model ID | Description | us-east-1 | us-west-2 | eu-west-1 | eu-central-1 | ap-northeast-1 |
+|----------|-------------|:---------:|:---------:|:---------:|:------------:|:--------------:|
+| `claude-3-haiku` | Fast and efficient for simple tasks | ✅ | ✅ | ✅ | | ✅ |
+| `claude-3-sonnet` | Balanced performance and capability | ✅ | ✅ | ✅ | | ✅ |
+| `claude-3-opus` | Most capable Claude 3 model | ✅ | ✅ | | | |
+| `claude-3.5-haiku` | Improved speed and efficiency | ✅ | ✅ | ✅ | | ✅ |
+| `claude-3.5-sonnet` | Enhanced reasoning and analysis (v2) | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `claude-sonnet-4` | Latest generation Sonnet model | ✅ | ✅ | | | |
+| `claude-opus-4` | Most capable model available | ✅ | ✅ | | | |
+
+## Amazon Nova Models
+
+Amazon's native foundation models, optimized for AWS infrastructure.
+
+| Model ID | Description | us-east-1 | us-west-2 | eu-west-1 |
+|----------|-------------|:---------:|:---------:|:---------:|
+| `amazon-nova-micro` | Fastest, lowest cost text-only model | ✅ | ✅ | ✅ |
+| `amazon-nova-lite` | Low cost multimodal model for speed and cost | ✅ | ✅ | ✅ |
+| `amazon-nova-pro` | Highly capable multimodal model balancing accuracy and speed | ✅ | ✅ | |
+
+## Meta Llama Models
+
+Open-source Llama models from Meta.
+
+| Model ID | Description | us-east-1 | us-west-2 | eu-west-1 |
+|----------|-------------|:---------:|:---------:|:---------:|
+| `llama-3.1-8b-instruct` | Efficient instruction-following model | ✅ | ✅ | ✅ |
+| `llama-3.1-70b-instruct` | High-capability instruction-following model | ✅ | ✅ | |
+| `llama-3.1-405b-instruct` | Largest Llama model for complex tasks | ✅ | ✅ | |
+| `llama-3.2-1b-instruct` | Lightweight model for edge deployment | ✅ | ✅ | |
+| `llama-3.2-3b-instruct` | Compact model balancing size and capability | ✅ | ✅ | |
+| `llama-3.2-11b-vision-instruct` | Multimodal model with vision capabilities | ✅ | ✅ | |
+| `llama-3.2-90b-vision-instruct` | Large multimodal model with vision | ✅ | ✅ | |
+| `llama-3.3-70b-instruct` | Latest Llama 3.3 instruction model | ✅ | ✅ | |
+
+## Mistral AI Models
+
+High-performance models from Mistral AI.
+
+| Model ID | Description | us-east-1 | us-west-2 | eu-west-1 |
+|----------|-------------|:---------:|:---------:|:---------:|
+| `mistral-7b-instruct` | Efficient instruction-following model | ✅ | ✅ | ✅ |
+| `mixtral-8x7b-instruct` | Mixture of experts model for diverse tasks | ✅ | ✅ | ✅ |
+| `mistral-large` | High-capability model for complex reasoning | ✅ | ✅ | |
+| `mistral-large-2407` | Latest Mistral Large with improved capabilities | ✅ | ✅ | |
+| `mistral-small-2402` | Cost-effective model for simpler tasks | ✅ | ✅ | |
+
+## Cohere Models
+
+Enterprise-focused models from Cohere.
+
+| Model ID | Description | us-east-1 | us-west-2 |
+|----------|-------------|:---------:|:---------:|
+| `cohere-command-r` | Optimized for RAG and tool use | ✅ | ✅ |
+| `cohere-command-r-plus` | Enhanced model for complex enterprise tasks | ✅ | ✅ |
+
+## AI21 Labs Models
+
+Hybrid SSM-Transformer models from AI21 Labs.
+
+| Model ID | Description | us-east-1 | us-west-2 |
+|----------|-------------|:---------:|:---------:|
+| `ai21-jamba-1.5-mini` | Efficient hybrid SSM-Transformer model | ✅ | ✅ |
+| `ai21-jamba-1.5-large` | High-capability hybrid model | ✅ | ✅ |
+
+## DeepSeek Models
+
+Advanced reasoning models from DeepSeek.
+
+| Model ID | Description | us-east-1 | us-west-2 |
+|----------|-------------|:---------:|:---------:|
+| `deepseek-r1` | Advanced reasoning model with chain-of-thought | ✅ | ✅ |
+
+## Configuration
+
+To use AWS Bedrock, set the following environment variables:
+
+```bash
+DEFAULT_PROVIDER=bedrock
+AWS_REGION=us-east-1
+```
+
+<Callout type="warning">
+  Regional availability may change. Check the [AWS Bedrock documentation](https://docs.aws.amazon.com/bedrock/latest/userguide/batch-inference-supported.html) for the latest information.
+</Callout>
+
+## Example Request
+
+```bash
+curl -X POST http://localhost:8000/cargo/load \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: convoy_sk_your_key_here" \
+  -d '{
+    "params": {
+      "model": "amazon-nova-pro",
+      "max_tokens": 100,
+      "messages": [{"role": "user", "content": "Hello"}]
+    },
+    "callback_url": "https://example.com/callback"
+  }'
+```

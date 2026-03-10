@@ -23,7 +23,7 @@ See [Authentication](/concepts/authentication) for details on obtaining API keys
 ```json
 {
   "params": {
-    "model": "claude-sonnet-4-5",
+    "model": "claude-3-haiku",
     "max_tokens": 1024,
     "messages": [
       {"role": "user", "content": "Your prompt here"}
@@ -42,7 +42,7 @@ See [Authentication](/concepts/authentication) for details on obtaining API keys
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `params.model` | string | Yes | Model identifier |
+| `params.model` | string | Yes | Provider-agnostic model ID (e.g., `claude-3-haiku`) |
 | `params.max_tokens` | integer | No | Max tokens to generate (default: 1024) |
 | `params.messages` | array | Yes | Conversation messages |
 | `params.system` | string | No | System prompt |
@@ -51,6 +51,10 @@ See [Authentication](/concepts/authentication) for details on obtaining API keys
 | `params.top_k` | integer | No | Top-k sampling |
 | `params.stop_sequences` | array | No | Stop sequences |
 | `callback_url` | string | Yes | URL to receive results |
+
+<Callout type="info">
+  See [Supported Models](/concepts/models) for the full list of available model IDs.
+</Callout>
 
 ### Message Format
 
@@ -97,7 +101,7 @@ curl -X POST http://localhost:8000/cargo/load \
   -H "X-API-Key: convoy_sk_your_key_here" \
   -d '{
     "params": {
-      "model": "claude-sonnet-4-5",
+      "model": "claude-3-haiku",
       "max_tokens": 100,
       "messages": [{"role": "user", "content": "Hello"}]
     },
@@ -117,7 +121,7 @@ response = httpx.post(
     },
     json={
         "params": {
-            "model": "claude-sonnet-4-5",
+            "model": "claude-3-haiku",
             "max_tokens": 100,
             "messages": [{"role": "user", "content": "Hello"}]
         },
@@ -141,7 +145,7 @@ const response = await fetch("http://localhost:8000/cargo/load", {
   },
   body: JSON.stringify({
     params: {
-      model: "claude-sonnet-4-5",
+      model: "claude-3-haiku",
       max_tokens: 100,
       messages: [{ role: "user", content: "Hello" }]
     },
@@ -157,21 +161,47 @@ console.log(`Submitted: ${cargo_id}`);
 
 | Status | Description |
 |--------|-------------|
-| `400` | Invalid request body |
+| `400` | Invalid request body or invalid model ID |
 | `401` | Missing or invalid API key |
 | `403` | Project is inactive |
 | `500` | Internal server error |
 
 ### Error Response Examples
 
+**Missing API Key:**
 ```json
 {"detail": "API key required. Include X-API-Key header."}
 ```
 
+**Invalid API Key:**
 ```json
 {"detail": "Invalid API key."}
 ```
 
+**Inactive Project:**
 ```json
 {"detail": "Project is inactive."}
+```
+
+**Invalid Model ID:**
+```json
+{
+  "detail": {
+    "error": "invalid_model",
+    "message": "Unknown model: claude-4-turbo",
+    "supported_models": ["claude-3-haiku", "claude-3-sonnet", "claude-3-opus", "..."]
+  }
+}
+```
+
+**Model Not Available in Region (Bedrock):**
+```json
+{
+  "detail": {
+    "error": "model_not_in_region",
+    "message": "Model claude-3-opus is not available in region eu-west-1",
+    "available_regions": ["us-east-1", "us-west-2"],
+    "supported_models": ["claude-3-haiku", "claude-3-sonnet", "..."]
+  }
+}
 ```

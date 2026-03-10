@@ -1,0 +1,93 @@
+# Anthropic API Models
+
+All Claude models available through the Anthropic API directly.
+
+import { Callout } from 'nextra/components'
+
+<Callout type="info">
+  Set `DEFAULT_PROVIDER=anthropic` and configure `ANTHROPIC_API_KEY` to use the Anthropic API directly.
+</Callout>
+
+## Available Models
+
+When using the Anthropic API provider, you have access to all Claude models, including some that are not available on AWS Bedrock batch inference.
+
+| Model ID | Description | Notes |
+|----------|-------------|-------|
+| `claude-3-haiku` | Fast and efficient for simple tasks | Also on Bedrock |
+| `claude-3-sonnet` | Balanced performance and capability | Also on Bedrock |
+| `claude-3-opus` | Most capable Claude 3 model | Also on Bedrock |
+| `claude-3.5-sonnet-v1` | Original 3.5 Sonnet | **Anthropic only** |
+| `claude-3.5-haiku` | Improved speed and efficiency | Also on Bedrock |
+| `claude-3.5-sonnet` | Enhanced reasoning and analysis (v2) | Also on Bedrock |
+| `claude-3.7-sonnet` | Extended thinking capabilities | **Anthropic only** |
+| `claude-sonnet-4` | Latest generation Sonnet model | Also on Bedrock |
+| `claude-opus-4` | Most capable model available | Also on Bedrock |
+
+## Anthropic-Only Models
+
+These models are exclusively available through the Anthropic API:
+
+### Claude 3.5 Sonnet v1
+
+The original Claude 3.5 Sonnet release. Use `claude-3.5-sonnet-v1` to access this version.
+
+```bash
+curl -X POST http://localhost:8000/cargo/load \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: convoy_sk_your_key_here" \
+  -d '{
+    "params": {
+      "model": "claude-3.5-sonnet-v1",
+      "max_tokens": 100,
+      "messages": [{"role": "user", "content": "Hello"}]
+    },
+    "callback_url": "https://example.com/callback"
+  }'
+```
+
+### Claude 3.7 Sonnet
+
+Claude 3.7 Sonnet with extended thinking capabilities. Use `claude-3.7-sonnet` to access this model.
+
+<Callout type="warning">
+  Claude 3.7 Sonnet supports extended thinking, which may require additional parameters. Check the [Anthropic documentation](https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking) for details.
+</Callout>
+
+## Configuration
+
+To use the Anthropic API directly, set the following environment variables:
+
+```bash
+DEFAULT_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-your-api-key-here
+```
+
+## Advantages of Anthropic API
+
+- **Access to all Claude models** - Including models not available on Bedrock batch inference
+- **Extended thinking support** - Full support for Claude 3.7's extended thinking capabilities
+- **Direct API access** - No AWS infrastructure required
+- **Simpler setup** - Just an API key, no AWS credentials needed
+
+## Limitations
+
+- **Claude models only** - No access to Amazon Nova, Llama, Mistral, or other models
+- **No regional selection** - Anthropic handles routing automatically
+- **Different pricing** - Anthropic API pricing may differ from AWS Bedrock
+
+## Example Request
+
+```bash
+curl -X POST http://localhost:8000/cargo/load \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: convoy_sk_your_key_here" \
+  -d '{
+    "params": {
+      "model": "claude-3.7-sonnet",
+      "max_tokens": 1000,
+      "messages": [{"role": "user", "content": "Explain quantum computing"}]
+    },
+    "callback_url": "https://example.com/callback"
+  }'
+```

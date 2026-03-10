@@ -1,0 +1,120 @@
+# Supported Models
+
+Convoy uses provider-agnostic model IDs that work across both AWS Bedrock and Anthropic API. This abstraction allows you to easily switch between providers without changing your application code - simply update the `DEFAULT_PROVIDER` environment variable.
+
+import { Callout } from 'nextra/components'
+
+<Callout type="info">
+  Use the `/models` endpoint to get a real-time list of supported models for your configuration.
+</Callout>
+
+## Choose Your Provider
+
+- **[AWS Bedrock Models](/concepts/models/bedrock)** - Access Claude, Amazon Nova, Llama, Mistral, Cohere, and more through AWS Bedrock batch inference.
+- **[Anthropic API Models](/concepts/models/anthropic)** - Direct access to Claude models through the Anthropic API.
+
+## How It Works
+
+1. You submit a request with a provider-agnostic model ID (e.g., `claude-3-haiku` or `amazon-nova-pro`)
+2. Convoy validates the model ID against the registry
+3. The model ID is translated to the provider-specific identifier based on your configuration
+4. For Bedrock, regional availability is also validated
+
+## Example Request
+
+```bash
+curl -X POST http://localhost:8000/cargo/load \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: convoy_sk_your_key_here" \
+  -d '{
+    "params": {
+      "model": "claude-3-haiku",
+      "max_tokens": 100,
+      "messages": [{"role": "user", "content": "Hello"}]
+    },
+    "callback_url": "https://example.com/callback"
+  }'
+```
+
+## List Models Endpoint
+
+Use the `/models` endpoint to get the current list of supported models:
+
+```bash
+curl http://localhost:8000/models
+```
+
+Response:
+
+```json
+{
+  "models": [
+    {
+      "model_id": "claude-3-haiku",
+      "description": "Claude 3 Haiku - Fast and efficient for simple tasks",
+      "model_family": "anthropic",
+      "available_for_anthropic": true,
+      "available_for_bedrock": true,
+      "bedrock_regions": ["us-east-1", "us-west-2", "eu-west-1", "ap-northeast-1"],
+      "deprecated": false
+    },
+    ...
+  ],
+  "current_provider": "bedrock",
+  "current_region": "us-east-1",
+  "available_models": ["claude-3-haiku", "amazon-nova-pro", ...]
+}
+```
+
+## Provider Configuration
+
+The default provider is configured via the `DEFAULT_PROVIDER` environment variable:
+
+```bash
+# Use AWS Bedrock (default)
+DEFAULT_PROVIDER=bedrock
+
+# Use Anthropic API directly
+DEFAULT_PROVIDER=anthropic
+```
+
+For Bedrock, also configure the AWS region:
+
+```bash
+AWS_REGION=us-east-1
+```
+
+## Error Handling
+
+If you use an invalid or unavailable model, you'll receive a `400 Bad Request` response:
+
+### Unknown Model
+
+```json
+{
+  "error": "invalid_model",
+  "message": "Unknown model: gpt-4-turbo",
+  "supported_models": ["claude-3-haiku", "amazon-nova-pro", ...]
+}
+```
+
+### Model Not Available for Provider
+
+```json
+{
+  "error": "model_not_available",
+  "message": "Model amazon-nova-pro is not available for anthropic",
+  "supported_models": ["claude-3-haiku", "claude-3-sonnet", ...]
+}
+```
+
+### Model Not Available in Region (Bedrock)
+
+```json
+{
+  "error": "model_not_in_region",
+  "message": "Model claude-3-opus is not available in region eu-west-1",
+  "available_regions": ["us-east-1", "us-west-2"],
+  "supported_models": ["claude-3-haiku", "claude-3-sonnet", ...]
+}
+```

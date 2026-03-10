@@ -145,3 +145,24 @@ class APIKeyListResponse(BaseModel):
     """Response model for listing API keys."""
     api_keys: list[APIKeyResponse] = Field(..., description="List of API keys")
     total: int = Field(..., description="Total number of API keys")
+
+
+# ============ Model Information Models ============
+
+class ModelInfo(BaseModel):
+    """Information about a supported model."""
+    model_id: str = Field(..., description="Provider-agnostic model identifier")
+    description: str = Field(..., description="Human-readable description of the model")
+    model_family: str = Field(..., description="Model family/provider (e.g., anthropic, amazon, meta)")
+    available_for_anthropic: bool = Field(..., description="Whether the model is available via Anthropic API")
+    available_for_bedrock: bool = Field(..., description="Whether the model is available via AWS Bedrock")
+    bedrock_regions: list[str] = Field(default_factory=list, description="AWS regions where Bedrock batch inference is available")
+    deprecated: bool = Field(default=False, description="Whether this model is deprecated")
+
+
+class SupportedModelsResponse(BaseModel):
+    """Response model for listing supported models."""
+    models: list[ModelInfo] = Field(..., description="List of supported models")
+    current_provider: str = Field(..., description="Currently configured provider")
+    current_region: Optional[str] = Field(None, description="Currently configured AWS region (for Bedrock)")
+    available_models: list[str] = Field(..., description="Models available for the current provider/region configuration")

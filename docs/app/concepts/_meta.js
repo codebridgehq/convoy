@@ -1,5 +1,8 @@
 export default {
   index: 'Overview',
+  models: {
+    title: 'Supported Models'
+  },
   authentication: {
     title: 'Authentication'
   },

@@ -2,6 +2,8 @@
 
 Use Anthropic's Message Batches API directly.
 
+import { Callout } from 'nextra/components'
+
 ## Prerequisites
 
 - Anthropic API key
@@ -10,27 +12,39 @@ Use Anthropic's Message Batches API directly.
 
 ```bash
 # .env
+DEFAULT_PROVIDER=anthropic
 ANTHROPIC_API_KEY=sk-ant-api03-...
 ```
 
 ## Supported Models
 
-| Model | Identifier |
-|-------|------------|
-| Claude 3.5 Sonnet | `claude-sonnet-4-5` |
-| Claude 3.5 Haiku | `claude-3-5-haiku-20241022` |
-| Claude 3 Opus | `claude-3-opus-20240229` |
-| Claude 3 Sonnet | `claude-3-sonnet-20240229` |
-| Claude 3 Haiku | `claude-3-haiku-20240307` |
+Convoy uses provider-agnostic model IDs. When using Anthropic, these are automatically translated to Anthropic model identifiers.
+
+<Callout type="info">
+  See [Supported Models](/concepts/models) for the full list of available models.
+</Callout>
+
+| Model ID | Anthropic Model ID |
+|----------|-------------------|
+| `claude-3-haiku` | `claude-3-haiku-20240307` |
+| `claude-3-sonnet` | `claude-3-sonnet-20240229` |
+| `claude-3-opus` | `claude-3-opus-20240229` |
+| `claude-3.5-haiku` | `claude-3-5-haiku-20241022` |
+| `claude-3.5-sonnet` | `claude-3-5-sonnet-20241022` |
+| `claude-sonnet-4` | `claude-sonnet-4-20250514` |
+| `claude-opus-4` | `claude-opus-4-20250514` |
 
 ## Example Request
+
+Use the provider-agnostic model ID in your requests:
 
 ```bash
 curl -X POST http://localhost:8000/cargo/load \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: convoy_sk_your_key_here" \
   -d '{
     "params": {
-      "model": "claude-sonnet-4-5",
+      "model": "claude-3-haiku",
       "max_tokens": 100,
       "messages": [{"role": "user", "content": "Hello"}]
     },
@@ -40,11 +54,13 @@ curl -X POST http://localhost:8000/cargo/load \
 
 ## How It Works
 
-1. Convoy collects requests
-2. Submits batch via Anthropic Message Batches API
-3. Polls batch status until complete
-4. Retrieves results from API
-5. Delivers results via callbacks
+1. You submit a request with a provider-agnostic model ID (e.g., `claude-3-haiku`)
+2. Convoy validates the model and translates it to the Anthropic model identifier
+3. Convoy collects requests
+4. Submits batch via Anthropic Message Batches API
+5. Polls batch status until complete
+6. Retrieves results from API
+7. Delivers results via callbacks
 
 ## API Limits
 
