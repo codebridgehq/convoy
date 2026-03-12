@@ -10,10 +10,9 @@ These tests verify the Convoy API endpoints work correctly by making real HTTP r
 
 | Test File | Endpoint | Description |
 |-----------|----------|-------------|
-| `test_health.py` | `GET /health` | Health check endpoint tests |
-| `test_cargo_load.py` | `POST /cargo/load` | Cargo load endpoint tests (valid/invalid payloads) |
-| `test_cargo_tracking.py` | `GET /cargo/{cargo_id}/tracking` | Cargo tracking endpoint tests |
+| `test_auth.py` | Auth endpoints | Authentication and API key tests |
 | `test_batch_flow.py` | Full flow | **Batch processing E2E test** - sends 100 requests to verify complete flow |
+| `test_cargo_load.py` | `POST /cargo/load` | Cargo load endpoint tests (valid/invalid payloads) |
 
 ## Running Tests
 
@@ -26,10 +25,10 @@ The E2E tests are configured as a Docker Compose profile that only runs when exp
 docker compose up -d
 
 # Run E2E tests against local Docker environment
-docker compose --profile tests up --build convoy-e2e-tests
+docker compose --profile tests run --rm convoy-tests
 
 # Run tests and see output in real-time
-docker compose --profile tests up --build --attach convoy-e2e-tests convoy-e2e-tests
+docker compose --profile tests run --rm convoy-tests pytest -v
 ```
 
 ### Running Against Different Environments
@@ -37,11 +36,11 @@ docker compose --profile tests up --build --attach convoy-e2e-tests convoy-e2e-t
 ```bash
 # Against staging environment
 API_BASE_URL=https://staging-api.convoy.example.com \
-  docker compose --profile tests up --build convoy-e2e-tests
+  docker compose --profile tests run --rm convoy-tests
 
 # Against production environment
 API_BASE_URL=https://api.convoy.example.com \
-  docker compose --profile tests up --build convoy-e2e-tests
+  docker compose --profile tests run --rm convoy-tests
 ```
 
 ### Running Locally (Without Docker)
@@ -91,10 +90,10 @@ tests/
 ├── Dockerfile.callback      # Docker image for mock callback server
 ├── mock_callback_server.py  # FastAPI server for receiving callbacks
 ├── README.md                # This file
-├── test_health.py           # Health endpoint tests
+├── test_auth.py             # Authentication tests
+├── test_batch_flow.py       # Batch processing E2E tests
 ├── test_cargo_load.py       # Cargo load endpoint tests
-├── test_cargo_tracking.py   # Cargo tracking endpoint tests
-└── test_batch_flow.py       # Batch processing E2E tests
+└── test_cargo_tracking.py   # Cargo tracking endpoint tests
 ```
 
 ## Writing New Tests
@@ -162,7 +161,7 @@ Ensure you have the latest dependencies:
 
 ```bash
 # Rebuild without cache
-docker compose --profile tests build --no-cache convoy-e2e-tests
+docker compose --profile tests build --no-cache convoy-tests
 ```
 
 ## Batch Flow Test
