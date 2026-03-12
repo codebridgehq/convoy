@@ -70,6 +70,68 @@ class BedrockBatchProcessor(BaseBatchProcessor):
         }
         return mapping.get(bedrock_status, BatchJobStatus.PENDING)
 
+    def _get_inference_profile_id(self, model_id: str) -> str:
+        """Convert a model ID to an inference profile ID if required.
+
+        Many newer Bedrock models require using inference profiles for batch
+        inference instead of direct model IDs. This includes newer models from
+        Anthropic, Meta, Amazon, and other providers.
+
+        Args:
+            model_id: The original model ID (e.g., 'anthropic.claude-3-5-haiku-20241022-v1:0').
+
+        Returns:
+            The inference profile ID (e.g., 'us.anthropic.claude-3-5-haiku-20241022-v1:0')
+            or the original model_id if no conversion is needed.
+        """
+        # If already an inference profile ID (starts with 'us.' or 'global.'), return as-is
+        if model_id.startswith("us.") or model_id.startswith("global."):
+            return model_id
+
+        # Model prefixes that require inference profiles for batch inference
+        # These models don't support on-demand throughput for batch jobs
+        # Based on AWS Bedrock inference profiles list
+        inference_profile_models = [
+            # Anthropic Claude models (3.5+, 3.7, 4.x)
+            "anthropic.claude-3-5-haiku",
+            "anthropic.claude-3-5-sonnet",
+            "anthropic.claude-3-7-sonnet",
+            "anthropic.claude-sonnet-4",
+            "anthropic.claude-opus-4",
+            "anthropic.claude-haiku-4",
+            # Meta Llama models (3.1+, 3.2, 3.3, 4.x)
+            "meta.llama3-1",
+            "meta.llama3-2",
+            "meta.llama3-3",
+            "meta.llama4",
+            # Amazon Nova models
+            "amazon.nova-micro",
+            "amazon.nova-lite",
+            "amazon.nova-pro",
+            "amazon.nova-premier",
+            "amazon.nova-2",
+            # DeepSeek
+            "deepseek.r1",
+            # Mistral
+            "mistral.pixtral",
+            # Cohere
+            "cohere.embed-v4",
+            # Writer
+            "writer.palmyra-x4",
+            "writer.palmyra-x5",
+        ]
+
+        # Check if this model requires an inference profile
+        for prefix in inference_profile_models:
+            if model_id.startswith(prefix):
+                # Convert to US regional inference profile
+                inference_profile_id = f"us.{model_id}"
+                return inference_profile_id
+
+        # Return original model_id for models that support direct invocation
+        # (e.g., older Claude 3 models like claude-3-haiku-20240307-v1:0)
+        return model_id
+
     def _parse_s3_uri(self, uri: str) -> tuple[str, str]:
         """Parse S3 URI into bucket and key.
 
@@ -238,6 +300,10 @@ class BedrockBatchProcessor(BaseBatchProcessor):
 
             if not model_id:
                 raise ValueError("model_id must be provided in metadata or requests")
+
+            # Convert model ID to inference profile ID for models that require it
+            # Claude 3.5+ models require using inference profiles for batch inference
+            model_id = self._get_inference_profile_id(model_id)
 
             # Generate unique job name and timestamp
             timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
