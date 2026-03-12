@@ -486,3 +486,75 @@ async def process_batch_results(batch_job_id: str) -> list[str]:
         )
 
         return cargo_request_ids
+
+
+@activity.defn
+async def mark_batch_failed(batch_job_id: str, error_message: str) -> int:
+    """Mark a batch job as failed and reset its cargo_requests to pending.
+
+    This activity is called when a batch fails to submit to the provider,
+    allowing the cargo_requests to be picked up by a future batch.
+
+    Args:
+        batch_job_id: The batch job ID.
+        error_message: The error message describing why the batch failed.
+
+    Returns:
+        Number of cargo_requests that were reset to pending.
+    """
+    from uuid import UUID
+
+    batch_uuid = UUID(batch_job_id)
+    reset_count = 0
+
+    async for session in get_async_session():
+        # Get the batch job
+        stmt = select(BatchJob).where(BatchJob.id == batch_uuid)
+        result = await session.execute(stmt)
+        batch_job = result.scalar_one_or_none()
+
+        if not batch_job:
+            logger.warning(f"Batch job {batch_job_id} not found")
+            return 0
+
+        # Only process if batch is in READY status (not yet submitted)
+        if batch_job.status not in (BatchStatus.READY, BatchStatus.PENDING):
+            logger.info(
+                f"Batch job {batch_job_id} is in status {batch_job.status}, "
+                f"not resetting cargo_requests"
+            )
+            # Still mark as failed if not already
+            if batch_job.status not in (BatchStatus.FAILED, BatchStatus.COMPLETED, BatchStatus.CANCELLED):
+                batch_job.status = BatchStatus.FAILED
+                batch_job.error_message = error_message
+                await session.commit()
+            return 0
+
+        # Reset cargo_requests back to pending so they can be reprocessed
+        reset_stmt = (
+            update(CargoRequest)
+            .where(CargoRequest.batch_job_id == batch_uuid)
+            .values(
+                status=CargoStatus.PENDING,
+                batch_job_id=None,
+                updated_at=datetime.now(timezone.utc),
+            )
+            .returning(CargoRequest.id)
+        )
+        result = await session.execute(reset_stmt)
+        reset_ids = result.scalars().all()
+        reset_count = len(reset_ids)
+
+        # Mark batch as failed with the error message
+        batch_job.status = BatchStatus.FAILED
+        batch_job.error_message = error_message
+        batch_job.completed_at = datetime.now(timezone.utc)
+
+        await session.commit()
+
+        logger.info(
+            f"Marked batch job {batch_job_id} as failed: {error_message}. "
+            f"Reset {reset_count} cargo_requests to pending."
+        )
+
+        return reset_count

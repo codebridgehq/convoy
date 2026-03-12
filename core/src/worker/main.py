@@ -17,6 +17,7 @@ from src.worker.activities import (
     delete_expired_results,
     deliver_callback,
     find_expired_results,
+    mark_batch_failed,
     mark_callback_failed,
     poll_batch_status,
     process_batch_results,
@@ -104,6 +105,7 @@ async def run_worker() -> None:
             submit_batch_to_provider,
             poll_batch_status,
             process_batch_results,
+            mark_batch_failed,
             # Callback activities
             deliver_callback,
             update_callback_status,

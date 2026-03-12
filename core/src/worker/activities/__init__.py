@@ -3,6 +3,7 @@
 from .batch_activities import (
     check_pending_requests,
     create_batch_job,
+    mark_batch_failed,
     poll_batch_status,
     process_batch_results,
     submit_batch_to_provider,
@@ -24,6 +25,7 @@ __all__ = [
     "submit_batch_to_provider",
     "poll_batch_status",
     "process_batch_results",
+    "mark_batch_failed",
     # Callback activities
     "deliver_callback",
     "update_callback_status",
