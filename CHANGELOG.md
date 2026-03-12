@@ -1,3 +1,15 @@
+## [1.2.0](https://github.com/codebridgehq/convoy/compare/v1.1.1...v1.2.0) (2026-03-12)
+
+
+### ✨ Features
+
+* **worker:** add automatic batch failure recovery ([7f332bb](https://github.com/codebridgehq/convoy/commit/7f332bb98844ec292fb3318352ef759dfa8c45f0))
+
+
+### 📚 Documentation
+
+* fix test docker command to use convoy-tests ([d530537](https://github.com/codebridgehq/convoy/commit/d530537ca08ee75aa22bcf34b6eafee649c66182))
+
 ## [1.1.1](https://github.com/codebridgehq/convoy/compare/v1.1.0...v1.1.1) (2026-03-12)
 
 
