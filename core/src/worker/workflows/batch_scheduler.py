@@ -5,6 +5,7 @@ from datetime import timedelta
 
 from temporalio import workflow
 from temporalio.common import RetryPolicy
+from temporalio.workflow import ParentClosePolicy
 
 with workflow.unsafe.imports_passed_through():
     from src.worker.activities.batch_activities import (
@@ -99,6 +100,7 @@ class BatchSchedulerWorkflow:
                             )
 
                             # Start child workflow for batch processing (non-blocking)
+                            # Use ABANDON policy so child continues even if parent does continue_as_new
                             await workflow.start_child_workflow(
                                 "BatchProcessingWorkflow",
                                 BatchProcessingInput(
@@ -106,6 +108,7 @@ class BatchSchedulerWorkflow:
                                     provider=input.provider,
                                 ),
                                 id=f"batch-processing-{batch_job_id}",
+                                parent_close_policy=ParentClosePolicy.ABANDON,
                             )
 
                             workflow.logger.info(
@@ -128,6 +131,7 @@ class BatchSchedulerWorkflow:
                         workflow.logger.info(f"Created batch job: {batch_job_id}")
 
                         # Start child workflow for batch processing (non-blocking)
+                        # Use ABANDON policy so child continues even if parent does continue_as_new
                         await workflow.start_child_workflow(
                             "BatchProcessingWorkflow",
                             BatchProcessingInput(
@@ -135,6 +139,7 @@ class BatchSchedulerWorkflow:
                                 provider=input.provider,
                             ),
                             id=f"batch-processing-{batch_job_id}",
+                            parent_close_policy=ParentClosePolicy.ABANDON,
                         )
 
                         workflow.logger.info(
