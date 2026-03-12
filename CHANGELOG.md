@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/codebridgehq/convoy/compare/v1.2.0...v1.2.1) (2026-03-12)
+
+
+### 🐛 Bug Fixes
+
+* add parentclosepolicy.abandon to prevent child workflow termination ([2ce99c3](https://github.com/codebridgehq/convoy/commit/2ce99c36accf3451b8e31a4de3932c8aedba28a3))
+
 ## [1.2.0](https://github.com/codebridgehq/convoy/compare/v1.1.1...v1.2.0) (2026-03-12)
 
 
