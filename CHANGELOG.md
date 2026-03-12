@@ -1,3 +1,17 @@
+## [1.1.1](https://github.com/codebridgehq/convoy/compare/v1.1.0...v1.1.1) (2026-03-12)
+
+
+### 🐛 Bug Fixes
+
+* **bedrock:** use inference profiles for newer models ([344b446](https://github.com/codebridgehq/convoy/commit/344b446ef6b1150bdf2527fefe3d12292e207067))
+
+
+### 📚 Documentation
+
+* add contributor covenant code of conduct ([cc787ea](https://github.com/codebridgehq/convoy/commit/cc787ea20956beacfc4bd435067d24bd15b8c095))
+* remove coming soon examples for aws fargate and digital ocean ([a7daf70](https://github.com/codebridgehq/convoy/commit/a7daf707059790d585f946de777d0cdc72c5a07f))
+* update hosted api callout to reflect beta status with waitlist link ([6bc9467](https://github.com/codebridgehq/convoy/commit/6bc9467bfb429632e733ee26fa9249cd1b855d75))
+
 ## [1.1.0](https://github.com/codebridgehq/convoy/compare/v1.0.1...v1.1.0) (2026-03-10)
 
 
